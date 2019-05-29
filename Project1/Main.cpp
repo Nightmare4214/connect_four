@@ -6,7 +6,7 @@ using namespace std;
 const int HEIGHT = 6, WIDTH = 7;
 //无穷大
 const int INF = 0x3f3f3f3f;
-//棋盘,0代表空_，1代表白(先手)X，2代表黑O
+//棋盘,0代表空_，1代表白(先手)X，-1代表黑O
 int board[WIDTH][HEIGHT];
 //当前每个列的高度
 int currentHeight[WIDTH];
@@ -31,28 +31,19 @@ void printBoard() {
 	cout << "***********************" << endl;
 }
 /**
- * 获得flag对应的棋子类型
- * @param flag rue代表X也就是1,反之是2
- * @return 棋子类型
- */
-int getCode(const bool &flag) {
-	if (flag)return 1;
-	return 2;
-}
-/**
  * 这一列能不能放棋子
  * @param col 放在第几列(0-WIDTH-1)
  * @return 这一列能不能放棋子
  */
-bool canPlay(const int &col) {
+bool canPlay(const int& col) {
 	return currentHeight[col] < HEIGHT;
 }
 /**
  * 放棋子
  * @param col 放在第几列(0-WIDTH-1)
- * @param player 玩家类型(1或者2)
+ * @param player 玩家类型(1或者-1)
  */
-void play(const int &col, const int &player) {
+void play(const int& col, const int& player) {
 	board[col][currentHeight[col]] = player;
 	++currentHeight[col];
 	++chessCnt;
@@ -60,27 +51,26 @@ void play(const int &col, const int &player) {
 /**
  * 悔棋
  * @param col 放在第几列(0-WIDTH-1)
- * @param player 玩家类型(1或者2)
  */
-void undo(const int &col, const int &player) {
+void undo(const int& col) {
 	--currentHeight[col];
 	board[col][currentHeight[col]] = 0;
 	--chessCnt;
 }
-void initPlay(const string &s) {
-	bool xTurn = true;
+void initPlay(const string& s) {
+	int player = 1;
 	for (const char &c : s) {
-		play(c - '0', getCode(xTurn));
-		xTurn = !xTurn;
+		play(c - '0', player);
+		player = -player;
 	}
 }
 /**
  * 下完这一步能不能赢
  * @param col 放在第几列(0-WIDTH-1)
- * @param player 玩家类型(1或者2)
+ * @param player 玩家类型(1或者-1)
  * @return 是否胜利
  */
-bool isWinMove(const int &lastCol, const int &player) {
+bool isWinMove(const int& lastCol, const int& player) {
 	int cnt = 0;
 	if (currentHeight[lastCol] > 3) {
 		for (int i = currentHeight[lastCol] - 1; i >= currentHeight[lastCol] - 4; --i) {
@@ -104,17 +94,16 @@ bool isWinMove(const int &lastCol, const int &player) {
 		if (cnt >= 3)return true;
 	}
 	return false;
-
 }
 /**
  * 是否胜利或者和棋
  * @param lastCol下的最后一列
- * @param flag true代表X也就是1,反之是2
+ * @param player 1代表X,-1代表O
  * @return 是否胜利或者和棋
  */
-bool isEnd(const int &lastCol, const bool &flag) {
-	if (isWinMove(lastCol, getCode(flag))) {
-		if (flag)cout << "X";
+bool isEnd(const int& lastCol, const int& player) {
+	if (isWinMove(lastCol, player)) {
+		if (1 == player)cout << "X";
 		else cout << "O";
 		cout << "获得了胜利" << endl;
 		return true;
@@ -143,38 +132,38 @@ int getCorrectCol() {
 			cout << "输入不正确,请重新输入" << endl;
 		}
 	}
-	return 0;	
+	return 0;
 }
 //人人对战
 void pvp() {
 	printBoard();
 	int col;
 	//是否轮到X
-	bool xTurn = true;
+	int player = 1;
 	while (true) {
 		col = getCorrectCol();
-		play(col, getCode(xTurn));
+		play(col, player);
 		printBoard();
-		if (isEnd(col, xTurn))return;
-		xTurn = !xTurn;
+		if (isEnd(col, player))return;
+		player = -player;
 	}
 }
 /**
  * 评估局面得分：规则为所有的空位置放上棋子后有几种赢法
- * @param flag true代表X也就是1,反之是2
+ * @param player 1代表X,-1代表O
  * @return 得分
  */
-int evaluate(const bool &flag) {
-	int player = getCode(flag), oppnent = getCode(!flag);
+int evaluate(const int& player) {
+	int opponent = -player;
 	int score = 0;
 	//竖着的
 	for (int i = 0; i < WIDTH; ++i) {
-		for (int j = 0; j <= HEIGHT-4; ++j) {
+		for (int j = 0; j <= HEIGHT - 4; ++j) {
 			int playerCnt = 0, opponentCnt = 0;
 			for (int k = 0; k < 4; ++k) {
 				int temp = board[i][j + k];
 				if (temp == player)++playerCnt;
-				else if (temp == oppnent) {
+				else if (temp == opponent) {
 					++opponentCnt;
 					break;
 				}
@@ -183,17 +172,17 @@ int evaluate(const bool &flag) {
 			else if (4 == playerCnt)score += 1000000;
 			else if (3 == playerCnt)score += 100000;
 			else if (2 == playerCnt)score += 100;
-			else if (1==playerCnt)score += 50;
+			else if (1 == playerCnt)score += 50;
 		}
 	}
 	//横直的
 	for (int j = 0; j < HEIGHT; ++j) {
-		for (int i = 0; i <= WIDTH-4; ++i) {
+		for (int i = 0; i <= WIDTH - 4; ++i) {
 			int playerCnt = 0, opponentCnt = 0;
 			for (int k = 0; k < 4; ++k) {
 				int temp = board[i + k][j];
 				if (temp == player)++playerCnt;
-				else if (temp == oppnent) {
+				else if (temp == opponent) {
 					++opponentCnt;
 					break;
 				}
@@ -217,7 +206,7 @@ int evaluate(const bool &flag) {
 			for (int k = 0; k < 4; ++k) {
 				int temp = board[x + k][y - k];
 				if (temp == player)++playerCnt;
-				else if (temp == oppnent) {
+				else if (temp == opponent) {
 					++opponentCnt;
 					break;
 				}
@@ -243,7 +232,7 @@ int evaluate(const bool &flag) {
 			for (int k = 0; k < 4; ++k) {
 				int temp = board[x + k][y + k];
 				if (temp == player)++playerCnt;
-				else if (temp == oppnent) {
+				else if (temp == opponent) {
 					++opponentCnt;
 					break;
 				}
@@ -264,29 +253,29 @@ int evaluate(const bool &flag) {
  * @param depth 搜索深度
  * @param alpha
  * @param beta
- * @param player 玩家，true代表X也就是1,反之是2
+ * @param player 玩家，1代表X,-1代表O
  * @param move 下的列
  * @return alpha值
  */
-int alphaBetaPruning(int depth, int alpha, int beta, bool player, int &move) {
+int alphaBetaPruning(int depth, int alpha, int beta, int player, int& move) {
 	//达到搜索深度了
 	if (depth <= 0) {
 		//得分=自己的-对手的
-		return evaluate(player) - evaluate(!player);
+		return evaluate(player) - evaluate(-player);
 	}
 	int bestMove = 0, tempMove;
 	for (const int &i : columnOrder) {
 		if (!canPlay(i))continue;
-		play(i, getCode(player));
+		play(i, player);
 		int val;
-		if (isWinMove(i, getCode(player))) {
+		if (isWinMove(i, player)) {
 			move = i;
-			undo(i, getCode(player));
+			undo(i);
 			return INF - HEIGHT * WIDTH + chessCnt;
 		}
 		else if (HEIGHT*WIDTH == chessCnt)val = 0;
-		else val = -alphaBetaPruning(depth - 1, -beta, -alpha, !player, tempMove);
-		undo(i, getCode(player));
+		else val = -alphaBetaPruning(depth - 1, -beta, -alpha, -player, tempMove);
+		undo(i);
 		if (val >= beta)return beta;
 		if (val > alpha) {
 			move = i;
@@ -301,37 +290,36 @@ int alphaBetaPruning(int depth, int alpha, int beta, bool player, int &move) {
  */
 void pve(const bool &firstFlag) {
 	int col;
-	bool xTurn = true;
-	bool winFlag = false;
+	int player = 1;
 	printBoard();
 	const int maxDepth = 10;
 	while (true) {
 		if (firstFlag) {
 			cout << "轮到X" << endl;
 			col = getCorrectCol();
-			play(col, getCode(xTurn));
+			play(col, player);
 			printBoard();
-			if (isEnd(col, xTurn))return;
-			xTurn = !xTurn;
+			if (isEnd(col, player))return;
+			player = -player;
 			cout << "轮到O" << endl;
-			alphaBetaPruning(maxDepth, -INF, INF, xTurn, col);
+			alphaBetaPruning(maxDepth, -INF, INF, player, col);
 			cout << col << endl;
 		}
 		else {
 			cout << "轮到X" << endl;
-			alphaBetaPruning(maxDepth, -INF, INF, xTurn, col);
+			alphaBetaPruning(maxDepth, -INF, INF, player, col);
 			cout << col << endl;
-			play(col, getCode(xTurn));
+			play(col, player);
 			printBoard();
-			if (isEnd(col, xTurn))return;
-			xTurn = !xTurn;
+			if (isEnd(col, player))return;
+			player = -player;
 			cout << "轮到O" << endl;
 			col = getCorrectCol();
 		}
-		play(col, getCode(xTurn));
+		play(col, player);
 		printBoard();
-		if (isEnd(col, xTurn))return;
-		xTurn = !xTurn;
+		if (isEnd(col, player))return;
+		player = -player;
 	}
 }
 int main() {
