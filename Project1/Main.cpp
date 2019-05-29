@@ -2,114 +2,160 @@
 #include<string>
 #include<cstring>
 using namespace std;
-//¸ßºÍ¿í
-const int HEIGHT = 6, WIDTH = 7;
-//ÎŞÇî´ó
+//é«˜å’Œå®½
+const int HEIGHT = 6, WIDTH = 8;
+//æ— ç©·å¤§
 const int INF = 0x3f3f3f3f;
-//ÆåÅÌ,0´ú±í¿Õ_£¬1´ú±í°×(ÏÈÊÖ)X£¬-1´ú±íºÚO
-int board[WIDTH][HEIGHT];
-//µ±Ç°Ã¿¸öÁĞµÄ¸ß¶È
-int currentHeight[WIDTH];
-//ÏÂÁË¼¸¸ö×Ó
+/*ä½æ£‹ç›˜ï¼Œåªå­˜å½“å‰ç©å®¶çš„æ£‹å­
+HEIGHT+1ä½å­˜1ä¸ªåˆ—(æœ€é«˜çš„ç”¨æ¥è¡¨ç¤ºæ»¡äº†)
+é€šè¿‡^æ©ç æ¥æ”¹å˜å½“å‰ç©å®¶çš„æ£‹å­
+*/
+uint64_t board;
+/*
+æ©ç ,å­˜æ‰€æœ‰çš„æ£‹å­ï¼Œç”¨1è¡¨ç¤º
+é€šè¿‡åœ¨åˆ—çš„æœ€åº•ä¸‹+1åæˆ–è¿ç®—æ¥ä¸‹æ£‹
+*/
+uint64_t mask;
+int tempBoard[WIDTH][HEIGHT];
+void toTempBoard() {
+	char player = 'X', opponent = 'O';
+	int player = 1, opponent = -1;
+	if (0 == (chessCnt & 1))swap(player, opponent);
+	uint64_t tempBitBoard = board;
+	uint64_t tempMask = mask;
+	for (int i = 0; i < WIDTH; ++i) {
+		for (int j = 0; j < HEIGHT; ++j) {
+			uint64_t a = tempBitBoard & 1;
+			uint64_t b = tempMask & 1;
+			if (0 == b)tempBoard[i][j] = 0;
+			else if()
+		}
+		tempBitBoard >>= 1;
+		tempMask >>= 1;
+	}
+}
+//ç§»åŠ¨æ­¥éª¤
 int chessCnt;
-//ÏÂÆåË³Ğò
+//ä¸‹æ£‹é¡ºåº
 int columnOrder[WIDTH];
-//Êä³öÆåÅÌ
+//è¾“å‡ºæ£‹ç›˜
 void printBoard() {
-	cout << "***********************" << endl;
-	for (int j = HEIGHT - 1; j >= 0; --j) {
-		for (int i = 0; i < WIDTH; ++i) {
+	char player = 'X', opponent = 'O';
+	if (0 == (chessCnt & 1))swap(player, opponent);
+	for (int i = HEIGHT - 1; i >= 0; --i) {
+		uint64_t temp = 1ULL << i;
+		for (int j = 0; j < WIDTH; ++j) {
 			cout << '|';
-			if (0 == board[i][j])cout << '_';
-			else if (1 == board[i][j])cout << 'X';
-			else cout << 'O';
+			uint64_t tempMask = mask & temp;
+			uint64_t tempBoard = board & temp;
+			if (0 == tempMask)cout << '_';
+			else if (0 != (tempMask^tempBoard))cout << player;
+			else cout << opponent;
+			temp <<= HEIGHT + 1;
 		}
 		cout << '|' << endl;
 	}
-	for (int i = 0; i < WIDTH; ++i)cout << ' ' << i;
+	for (int i = 0; i < WIDTH; ++i) {
+		cout << ' ' << i;
+	}
 	cout << ' ' << endl;
-	cout << "***********************" << endl;
+}
+//ç§»åŠ¨åˆ°colåˆ—æœ€é«˜çš„ä½ç½®
+uint64_t topMask(const int &col) {
+	/*
+	1ULL << (HEIGHT - 1)å°†1ç§»åˆ°HEIGHT-1çš„ä½ç½®(ä¹Ÿå°±æ˜¯æ£‹ç›˜çš„æœ€é«˜)
+	ç„¶åç§»åˆ°ç¬¬colåˆ—
+	*/
+	return (1ULL << (HEIGHT - 1)) << ((HEIGHT + 1)*col);
 }
 /**
- * ÕâÒ»ÁĞÄÜ²»ÄÜ·ÅÆå×Ó
- * @param col ·ÅÔÚµÚ¼¸ÁĞ(0-WIDTH-1)
- * @return ÕâÒ»ÁĞÄÜ²»ÄÜ·ÅÆå×Ó
+ * è¿™ä¸€åˆ—èƒ½ä¸èƒ½æ”¾æ£‹å­
+ * @param col æ”¾åœ¨ç¬¬å‡ åˆ—(0-WIDTH-1)
+ * @return è¿™ä¸€åˆ—èƒ½ä¸èƒ½æ”¾æ£‹å­
  */
-bool canPlay(const int& col) {
-	return currentHeight[col] < HEIGHT;
+bool canPlay(const int &col) {
+	return 0 == (mask & topMask(col));
+}
+//ç§»åŠ¨åˆ°colåˆ—æœ€åº•ä¸‹
+uint64_t bottomMask(const int &col) {
+	return 1ULL << ((HEIGHT + 1)*col);
 }
 /**
- * ·ÅÆå×Ó
- * @param col ·ÅÔÚµÚ¼¸ÁĞ(0-WIDTH-1)
- * @param player Íæ¼ÒÀàĞÍ(1»òÕß-1)
+ * æ”¾æ£‹å­
+ * @param col æ”¾åœ¨ç¬¬å‡ åˆ—(0-WIDTH-1)
  */
-void play(const int& col, const int& player) {
-	board[col][currentHeight[col]] = player;
-	++currentHeight[col];
+void play(const int &col) {
+	//boardè½¬æ¢æˆå¯¹æ‰‹çš„æ£‹å­
+	board ^= mask;
+	//maskåœ¨colåˆ—åŠ ä¸€ä¸ªå­
+	mask |= mask + bottomMask(col);
 	++chessCnt;
 }
 /**
- * »ÚÆå
- * @param col ·ÅÔÚµÚ¼¸ÁĞ(0-WIDTH-1)
+ * æ‚”æ£‹
+ * @param col æ”¾åœ¨ç¬¬å‡ åˆ—(0-WIDTH-1)
  */
-void undo(const int& col) {
-	--currentHeight[col];
-	board[col][currentHeight[col]] = 0;
-	--chessCnt;
-}
-void initPlay(const string& s) {
-	int player = 1;
-	for (const char &c : s) {
-		play(c - '0', player);
-		player = -player;
+void undo(const int &col) {
+	uint64_t temp = topMask(col);
+	for (int i = 0; i < HEIGHT; ++i) {
+		if (0 != (temp & mask)) {
+			mask &= ~temp;
+			board ^= mask;
+			--chessCnt;
+			return;
+		}
+		else {
+			temp >>= 1;
+		}
 	}
+}
+//åˆ¤æ–­è¿™ä¸€æ­¥ä¸‹ä¸‹å»èƒ½ä¸èƒ½èµ¢ï¼ˆplayä¹‹åè°ƒç”¨ï¼‰
+bool isWinMove(const int &col) {
+	//åˆ‡æ¢æˆè‡ªå·±çš„
+	uint64_t tempBoard = board ^ mask;
+	/*
+	å‚ç›´
+	tempBorad   tempMask   tempMask&(tempMask >> 2
+	1         0 0        0 0
+	1         1 1        0 0
+	1         1 1        0 0
+	1         1 1        1 1
+	0         1 0        1 0
+	0         0 0        1 0
+	*/
+	uint64_t tempMask = tempBoard & (tempBoard >> 1);
+	if (0 != (tempMask&(tempMask >> 2)))return true;
+
+	//æ°´å¹³
+	//å³ç§»height+1ç›¸å½“äºç§»åˆ°å‰ä¸€åˆ—åŒä¸€è¡Œ
+	tempMask = tempBoard & (tempBoard >> (HEIGHT + 1));
+	if (0 != (tempMask&(tempMask >> ((HEIGHT + 1) << 1))))return true;
+
+	//ä¸»å¯¹è§’çº¿
+	//å³ç§»height+2ç›¸å½“äºç§»åˆ°å‰ä¸€åˆ—åŒä¸€è¡Œçš„ä¸‹ä¸€ä¸ª
+	tempMask = tempBoard & (tempBoard >> (HEIGHT + 2));
+	if (0 != (tempMask&(tempMask >> ((HEIGHT + 2) << 1))))return true;
+
+	//å‰¯å¯¹è§’çº¿
+	//å³ç§»height+1ç›¸å½“äºç§»åˆ°å‰ä¸€åˆ—åŒä¸€è¡Œçš„ä¸Šä¸€ä¸ª
+	tempMask = tempBoard & (tempBoard >> HEIGHT);
+	return 0 != (tempMask&(tempMask >> (HEIGHT << 1)));
 }
 /**
- * ÏÂÍêÕâÒ»²½ÄÜ²»ÄÜÓ®
- * @param col ·ÅÔÚµÚ¼¸ÁĞ(0-WIDTH-1)
- * @param player Íæ¼ÒÀàĞÍ(1»òÕß-1)
- * @return ÊÇ·ñÊ¤Àû
- */
-bool isWinMove(const int& lastCol, const int& player) {
-	int cnt = 0;
-	if (currentHeight[lastCol] > 3) {
-		for (int i = currentHeight[lastCol] - 1; i >= currentHeight[lastCol] - 4; --i) {
-			if (player == board[lastCol][i])++cnt;
-			else break;
-		}
-		if (4 == cnt)return true;
-	}
-	//-1Ö÷¶Ô½ÇÏß£¬0ºá£¬1¸±¶Ô½ÇÏß
-	for (int dy = -1; dy <= 1; ++dy) {
-		cnt = 0;
-		//ÏÈËã×ó±ß£¬ÔÙËãÓÒ±ß
-		for (int dx = -1; dx <= 1; dx += 2) {
-			int x = lastCol + dx, y = currentHeight[lastCol] + dx * dy - 1;
-			while (x >= 0 && x < WIDTH&&y >= 0 && y < HEIGHT && player == board[x][y]) {
-				x += dx;
-				y += dx * dy;
-				++cnt;
-			}
-		}
-		if (cnt >= 3)return true;
-	}
-	return false;
-}
-/**
- * ÊÇ·ñÊ¤Àû»òÕßºÍÆå
- * @param lastColÏÂµÄ×îºóÒ»ÁĞ
- * @param player 1´ú±íX,-1´ú±íO
- * @return ÊÇ·ñÊ¤Àû»òÕßºÍÆå
+ * æ˜¯å¦èƒœåˆ©æˆ–è€…å’Œæ£‹
+ * @param lastColä¸‹çš„æœ€åä¸€åˆ—
+ * @param player 1ä»£è¡¨X,-1ä»£è¡¨O
+ * @return æ˜¯å¦èƒœåˆ©æˆ–è€…å’Œæ£‹
  */
 bool isEnd(const int& lastCol, const int& player) {
-	if (isWinMove(lastCol, player)) {
+	if (isWinMove(lastCol)) {
 		if (1 == player)cout << "X";
 		else cout << "O";
-		cout << "»ñµÃÁËÊ¤Àû" << endl;
+		cout << "è·å¾—äº†èƒœåˆ©" << endl;
 		return true;
 	}
 	else if (HEIGHT*WIDTH == chessCnt) {
-		cout << "Æ½¾Ö" << endl;
+		cout << "å¹³å±€" << endl;
 		return true;
 	}
 	else return false;
@@ -121,42 +167,61 @@ int getCorrectCol() {
 		try {
 			col = stoi(temp);
 			if (col < 0 || col >= WIDTH) {
-				cout << "ÁĞ²»ÕıÈ·,ÇëÖØĞÂÊäÈë" << endl;
+				cout << "åˆ—ä¸æ­£ç¡®,è¯·é‡æ–°è¾“å…¥" << endl;
 			}
 			else if (!canPlay(col)) {
-				cout << "ÕâÒ»ÁĞÒÑ¾­ÂúÁË,ÇëÖØĞÂÊäÈë" << endl;
+				cout << "è¿™ä¸€åˆ—å·²ç»æ»¡äº†,è¯·é‡æ–°è¾“å…¥" << endl;
 			}
 			else return col;
 		}
 		catch (exception e) {
-			cout << "ÊäÈë²»ÕıÈ·,ÇëÖØĞÂÊäÈë" << endl;
+			cout << "è¾“å…¥ä¸æ­£ç¡®,è¯·é‡æ–°è¾“å…¥" << endl;
 		}
 	}
 	return 0;
 }
-//ÈËÈË¶ÔÕ½
+//äººäººå¯¹æˆ˜
 void pvp() {
 	printBoard();
 	int col;
-	//ÊÇ·ñÂÖµ½X
+	//æ˜¯å¦è½®åˆ°X
 	int player = 1;
 	while (true) {
 		col = getCorrectCol();
-		play(col, player);
+		play(col);
 		printBoard();
 		if (isEnd(col, player))return;
 		player = -player;
 	}
 }
 /**
- * ÆÀ¹À¾ÖÃæµÃ·Ö£º¹æÔòÎªËùÓĞµÄ¿ÕÎ»ÖÃ·ÅÉÏÆå×ÓºóÓĞ¼¸ÖÖÓ®·¨
- * @param player 1´ú±íX,-1´ú±íO
- * @return µÃ·Ö
+ * è¯„ä¼°å±€é¢å¾—åˆ†ï¼šè§„åˆ™ä¸ºæ‰€æœ‰çš„ç©ºä½ç½®æ”¾ä¸Šæ£‹å­åæœ‰å‡ ç§èµ¢æ³•
+ * @param player 1ä»£è¡¨X,-1ä»£è¡¨O
+ * @return å¾—åˆ†
  */
 int evaluate(const int& player) {
+	int player = 1, opponent = -1;
+	if (0 == (chessCnt & 1))swap(player, opponent);
+	for (int i = HEIGHT - 1; i >= 0; --i) {
+		uint64_t temp = 1ULL << i;
+		for (int j = 0; j < WIDTH; ++j) {
+			cout << '|';
+			uint64_t tempMask = mask & temp;
+			uint64_t tempBoard = board & temp;
+			if (0 == tempMask)cout << '_';
+			else if (0 != (tempMask^tempBoard))cout << player;
+			else cout << opponent;
+			temp <<= HEIGHT + 1;
+		}
+		cout << '|' << endl;
+	}
+
+
+
+
 	int opponent = -player;
 	int score = 0;
-	//Êú×ÅµÄ
+	//ç«–ç€çš„
 	for (int i = 0; i < WIDTH; ++i) {
 		for (int j = 0; j <= HEIGHT - 4; ++j) {
 			int playerCnt = 0, opponentCnt = 0;
@@ -175,7 +240,7 @@ int evaluate(const int& player) {
 			else if (1 == playerCnt)score += 50;
 		}
 	}
-	//ºáÖ±µÄ
+	//æ¨ªç›´çš„
 	for (int j = 0; j < HEIGHT; ++j) {
 		for (int i = 0; i <= WIDTH - 4; ++i) {
 			int playerCnt = 0, opponentCnt = 0;
@@ -194,7 +259,7 @@ int evaluate(const int& player) {
 			else if (1 == playerCnt)score += 50;
 		}
 	}
-	//Ö÷¶Ô½ÇÏßy=-x+bias
+	//ä¸»å¯¹è§’çº¿y=-x+bias
 	for (int bias = 3; bias <= HEIGHT + WIDTH - 5; ++bias) {
 		int x = 0, y = bias;
 		if (y >= HEIGHT) {
@@ -220,7 +285,7 @@ int evaluate(const int& player) {
 			else if (1 == playerCnt)score += 50;
 		}
 	}
-	//¸±¶Ô½ÇÏßy=x+bias
+	//å‰¯å¯¹è§’çº¿y=x+bias
 	for (int bias = HEIGHT - 4; bias >= 4 - WIDTH; --bias) {
 		int x = 0, y = bias;
 		if (y < 0) {
@@ -248,102 +313,7 @@ int evaluate(const int& player) {
 	}
 	return score;
 }
-/**
- * alpha-beta¼ôÖ¦
- * @param depth ËÑË÷Éî¶È
- * @param alpha
- * @param beta
- * @param player Íæ¼Ò£¬1´ú±íX,-1´ú±íO
- * @param move ÏÂµÄÁĞ
- * @return alphaÖµ
- */
-int alphaBetaPruning(int depth, int alpha, int beta, int player, int& move) {
-	//´ïµ½ËÑË÷Éî¶ÈÁË
-	if (depth <= 0) {
-		//µÃ·Ö=×Ô¼ºµÄ-¶ÔÊÖµÄ
-		return evaluate(player) - evaluate(-player);
-	}
-	int bestMove = 0, tempMove;
-	for (const int &i : columnOrder) {
-		if (!canPlay(i))continue;
-		play(i, player);
-		int val;
-		if (isWinMove(i, player)) {
-			move = i;
-			undo(i);
-			return INF - HEIGHT * WIDTH + chessCnt;
-		}
-		else if (HEIGHT*WIDTH == chessCnt)val = 0;
-		else val = -alphaBetaPruning(depth - 1, -beta, -alpha, -player, tempMove);
-		undo(i);
-		if (val >= beta)return beta;
-		if (val > alpha) {
-			move = i;
-			alpha = val;
-		}
-	}
-	return alpha;
-}
-/**
- * ÈË»ú¶ÔÕ½
- * @param firstFlag ÈËÀàÊÇ·ñÏÈÊÖ
- */
-void pve(const bool &firstFlag) {
-	int col;
-	int player = 1;
-	printBoard();
-	const int maxDepth = 10;
-	while (true) {
-		if (firstFlag) {
-			cout << "ÂÖµ½X" << endl;
-			col = getCorrectCol();
-			play(col, player);
-			printBoard();
-			if (isEnd(col, player))return;
-			player = -player;
-			cout << "ÂÖµ½O" << endl;
-			alphaBetaPruning(maxDepth, -INF, INF, player, col);
-			cout << col << endl;
-		}
-		else {
-			cout << "ÂÖµ½X" << endl;
-			alphaBetaPruning(maxDepth, -INF, INF, player, col);
-			cout << col << endl;
-			play(col, player);
-			printBoard();
-			if (isEnd(col, player))return;
-			player = -player;
-			cout << "ÂÖµ½O" << endl;
-			col = getCorrectCol();
-		}
-		play(col, player);
-		printBoard();
-		if (isEnd(col, player))return;
-		player = -player;
-	}
-}
 int main() {
-	int temp;
-	cout << "Ñ¡Ôñ1ÈËÈË¶ÔÕ½£¬0ÈË»ú¶ÔÕ½" << endl;
-	bool pvpFlag, firstFlag = true;
-	cin >> temp;
-	pvpFlag = temp;
-	if (pvpFlag)cout << "Ñ¡ÔñÁËÈËÈË¶ÔÕ½" << endl;
-	else cout << "Ñ¡ÔñÁËÈË»ú¶ÔÕ½" << endl;
-	if (!pvpFlag) {
-		cout << "Ñ¡Ôñ1ÏÈÊÖ£¬0ºóÊÖ" << endl;
-		cin >> temp;
-		firstFlag = temp;
-		if (firstFlag)cout << "Ñ¡ÔñÁËÏÈÊÖ" << endl;
-		else cout << "Ñ¡ÔñÁËºóÊÖ" << endl;
-	}
-	cout << endl;
-	//´ÓÖĞ¼ä¿ªÊ¼(ÏòÏÂÈ¡Õû),È»ºó×óÓÒ
-	for (int i = 0; i < WIDTH; i++) {
-		columnOrder[i] = WIDTH / 2 + (1 - 2 * (i % 2))*(i + 1) / 2;
-	}
-
-	if (pvpFlag)pvp();
-	else pve(firstFlag);
+	pvp();
 	return 0;
 }
