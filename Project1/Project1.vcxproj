@@ -130,7 +130,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ConnectFour.cpp" />
+    <ClCompile Include="ConnectFourState.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MCTSNode.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ConnectFour.hpp" />
+    <ClInclude Include="ConnectFourState.hpp" />
+    <ClInclude Include="MCTSNode.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

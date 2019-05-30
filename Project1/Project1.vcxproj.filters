@@ -18,5 +18,25 @@
     <ClCompile Include="Main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="ConnectFour.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ConnectFourState.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MCTSNode.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ConnectFour.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ConnectFourState.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MCTSNode.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
