@@ -41,10 +41,10 @@ int UCT::defaultPolicy(ConnectFourState t)
 		winMove = -1;
 		playerSize = 0;
 		opponentSize = 0;
-		//±éÀúÑ¡Ôñ
+		//éå†é€‰æ‹©
 		for (int i = 0; i < ConnectFourState::WIDTH; ++i) {
 			if (t.canPlay(i)) {
-				//µ±Ç°Ñ¡ÊÖÖÆÊ¤µã
+				//å½“å‰é€‰æ‰‹åˆ¶èƒœç‚¹
 				if (t.isWinMove(i, false, true)) {
 					t.play(i);
 					return t.getResult();
@@ -53,7 +53,7 @@ int UCT::defaultPolicy(ConnectFourState t)
 					playerMoves[playerSize] = i;
 					++playerSize;
 				}
-				//¶ÔÊÖµÄÖÆÊ¤µã
+				//å¯¹æ‰‹çš„åˆ¶èƒœç‚¹
 				if (opponentSize < 2) {
 					if (t.isWinMove(i, true, true)) {
 						opponentWinMoves[opponentSize] = i;
@@ -89,8 +89,36 @@ void UCT::backUp(MCTSNode * expandNode,int reward)
 
 int UCT::getColByUCT()
 {
+	int playerMoves[ConnectFourState::WIDTH];
+	int opponentWinMoves[2];
+	int winMove = -1;
+	int playerSize = 0;
+	int opponentSize = 0;
+	ConnectFourState t = root.currentState;
+	for (int i = 0; i < ConnectFourState::WIDTH; ++i) {
+		if (t.canPlay(i)) {
+			//å½“å‰é€‰æ‰‹åˆ¶èƒœç‚¹
+			if (t.isWinMove(i, false, true)) {
+				return i;
+			}
+			else {
+				playerMoves[playerSize] = i;
+				++playerSize;
+			}
+			//å¯¹æ‰‹çš„åˆ¶èƒœç‚¹
+			if (opponentSize < 2) {
+				if (t.isWinMove(i, true, true)) {
+					opponentWinMoves[opponentSize] = i;
+					++opponentSize;
+				}
+			}
+		}
+	}
+	if (opponentSize>0) {
+		return opponentWinMoves[0];
+	}
 	MCTSNode* expandNode = nullptr;
-	for (int epoch = 0; epoch < 2000; ++epoch) {
+	for (int epoch = 0; epoch < 50000; ++epoch) {
 		expandNode = treePolicy();
 		int reward = defaultPolicy(expandNode->currentState);
 		backUp(expandNode, reward);
