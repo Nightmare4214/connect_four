@@ -31,12 +31,17 @@ uint64_t ConnectFourState::topMask(const int & col)
 
 bool ConnectFourState::canPlay(const int & col) const
 {
-	return 0 == (mask&topMask(col));
+ 	return 0 == (mask&topMask(col));
 }
 
 uint64_t ConnectFourState::bottomMask(const int & col)
 {
 	return 1ULL << ((HEIGHT + 1)*col);
+}
+
+uint64_t ConnectFourState::columnMask(const int & col)
+{
+	return (((1ULL << HEIGHT) - 1) << (col*(HEIGHT + 1)));
 }
 
 void ConnectFourState::play(const int & col)
@@ -49,11 +54,14 @@ void ConnectFourState::play(const int & col)
 	++round;
 }
 
-bool ConnectFourState::isWinMove(const int & col, const bool & opponentFlag)
+bool ConnectFourState::isWinMove(const int & col, const bool & opponentFlag,const bool& predict) const
 {
 	uint64_t tempBoard = board;
 	if (opponentFlag) {
 		tempBoard ^= mask;
+	}
+	if (predict) {
+		tempBoard |= (mask + bottomMask(col))&columnMask(col);
 	}
 	/*
 	垂直
@@ -73,19 +81,20 @@ bool ConnectFourState::isWinMove(const int & col, const bool & opponentFlag)
 	tempMask = tempBoard & (tempBoard >> (HEIGHT + 1));
 	if (0 != (tempMask&(tempMask >> ((HEIGHT + 1) << 1))))return true;
 
-	//主对角线
+	//副对角线
 	//右移height+2相当于移到前一列同一行的下一个
 	tempMask = tempBoard & (tempBoard >> (HEIGHT + 2));
 	if (0 != (tempMask&(tempMask >> ((HEIGHT + 2) << 1))))return true;
 
-	//副对角线
+	//主对角线
 	//右移height+1相当于移到前一列同一行的上一个
 	tempMask = tempBoard & (tempBoard >> HEIGHT);
-	return 0 != (tempMask&(tempMask >> (HEIGHT << 1)));
+	return (0 != (tempMask&(tempMask >> (HEIGHT << 1))));
 }
 
 void ConnectFourState::printBoard() const
 {
+	cout << "******************************************" << endl;
 	char player = 'X', opponent = 'O';
 	if (0 == (round & 1))swap(player, opponent);
 	for (int i = HEIGHT - 1; i >= 0; --i) {
@@ -105,9 +114,10 @@ void ConnectFourState::printBoard() const
 		cout << ' ' << i;
 	}
 	cout << ' ' << endl;
+	cout << "******************************************" << endl;
 }
 
-int ConnectFourState::getResult()
+int ConnectFourState::getResult() const
 {
 	bool xFlag = true;
 	if (0 == (round & 1))xFlag = false;
@@ -118,15 +128,7 @@ int ConnectFourState::getResult()
 	else return -2;
 }
 
-bool ConnectFourState::isTerminal()
+bool ConnectFourState::isTerminal() const
 {
-	int result = getResult();
-	if (-2 == result)return false;
-#ifdef _DEBUG
-	if (1 == result)cout << "X获得了胜利";
-	else if (-1 == result)cout << "O获得了胜利";
-	else cout << "平局";
-	cout << endl;
-#endif // DEBUG
-	return true;
+	return -2 != getResult();
 }

@@ -2,5 +2,6 @@
 #include"ConnectFour.hpp"
 int main() {
 	ConnectFour t;
-	t.pvp();
+	t.pve(false);
+	return 0;
 }
