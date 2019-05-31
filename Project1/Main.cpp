@@ -487,10 +487,6 @@ int main() {
 	//        else cout << "选择了后手" << endl;
 	//    }
 	//    cout << endl;
-	//    //从中间开始(向下取整),然后左右
-	//    for (int i = 0; i < WIDTH; i++) {
-	//        columnOrder[i] = WIDTH / 2 + (1 - 2 * (i % 2))*(i + 1) / 2;
-	//    }
 	//
 	//    if (pvpFlag)pvp();
 	//    else pve(firstFlag);
