@@ -1,5 +1,5 @@
 #include "MCTSNode.hpp"
-#include<limits>
+#include<cfloat>
 #include<cmath>
 MCTSNode::MCTSNode():
 	parent(nullptr),

@@ -2,6 +2,10 @@
 #include"ConnectFour.hpp"
 int main() {
 	ConnectFour t;
-	t.pve(false);
+	/*
+	t.pvp();
+	t.pve(true);
+	t.pve(false);*/
+	t.AI_course_socket();
 	return 0;
 }

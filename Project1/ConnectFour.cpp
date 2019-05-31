@@ -24,6 +24,52 @@ int ConnectFour::getCorrectCol()
 	return 0;
 }
 
+void ConnectFour::initSocket()
+{
+
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
+	//新建客户端socket
+	sockClient = socket(AF_INET, SOCK_STREAM, 0);
+	//定义要连接的服务端地址
+	addrServer.sin_family = AF_INET;
+	addrServer.sin_port = htons(PORT);//连接端口
+	addrServer.sin_addr.S_un.S_addr = inet_addr(IP);
+	if (connect(sockClient, (SOCKADDR*)&addrServer, sizeof(addrServer)) < 0)
+	{
+		throw "未连接到服务器\n";
+	}
+}
+
+void ConnectFour::closeSocket()
+{
+	closesocket(sockClient);
+	WSACleanup();
+}
+
+void ConnectFour::sendData(const string & msg) const
+{
+	if (SOCKET_ERROR != send(sockClient, msg.data(), msg.length(), 0))
+		printf("Client:%s\n", msg.data());
+	else
+		printf("发送失败!\n");
+}
+
+string ConnectFour::recvData() const
+{
+	char message[Len] = { 0 };
+	if (recv(sockClient, message, Len, 0) < 0)
+	{
+		printf("接收失败!\n");
+		return GameOver;
+	}
+	else
+	{
+		printf("Server:%s\n", message);
+		string msg(message);
+		return msg.substr(0, msg.find_first_of('\r'));
+	}
+}
+
 void ConnectFour::pvp()
 {
 	board.printBoard();
@@ -93,5 +139,59 @@ void ConnectFour::pve(const bool & playerFirst)
 			else cout << "平局" << endl;
 			return;
 		}
+	}
+}
+
+void ConnectFour::AI_course_socket()
+{
+	//board.printBoard();
+	int col;
+	try
+	{
+		initSocket();
+
+		random_device rd;
+
+		sendData(TeamName);
+
+		string msg = recvData();
+		int out;
+		if (msg == Success) {
+			while (true) {
+				msg = recvData();
+
+				if (!(msg == GameOver)) {
+
+					if (msg == Begin) {
+						solver.init(board);
+						col = solver.getColByUCT();
+						board.play(col);
+						//board.printBoard();
+						out = col + 1;
+						//out = 1 + rd() % 8;
+					}
+					else {
+						int in = stoi(msg);
+						board.play(in - 1);
+						solver.init(board);
+						col = solver.getColByUCT();
+						board.play(col);
+						//board.printBoard();
+						out = col + 1;
+						//out = out = 1 + rd() % 8;
+					}
+					sendData(to_string(out));
+				}
+				else {
+					break;
+				}
+			}
+		}
+
+		closeSocket();
+	}
+	catch (exception e)
+	{
+		printf(e.what());
 	}
 }
