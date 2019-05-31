@@ -22,16 +22,32 @@ public:
 	int visitTime;
 	//是否生成过孩子
 	bool expanded;
+	//当前的状态
 	ConnectFourState currentState;
 	void update(const int& reward);
-	//删除除了根节点以外的所有节点,传入this
-	void destory(MCTSNode* t);
-	//生成孩子
+	/**
+	 * 删除除了根节点以外的所有节点,调用时传入this
+	 * @param t 要删除孩子的节点
+	 */
+	void destroy(MCTSNode *t);
+	/**
+	 * 生成孩子
+	 */
 	void generateChildren();
-	//是否全部扩展过
+	/**
+	 * 是否所有的孩子都扩展过
+	 * @return 是否全部扩展过
+	 */
 	bool isAllExpanded();
-	//获得扩展节点
+	/**
+	 * 选择一个孩子进行扩展
+	 * @return 扩展节点
+	 */
 	MCTSNode* expand();
-	//获得最好的孩子
+	/**
+	 * 获得最好的孩子
+	 * @param C 系数
+	 * @return 使用UCB算法，权衡exploration和exploitation后选择得分最高的子节点，注意如果是预测阶段直接选择当前Q值得分最高的。
+	 */
 	MCTSNode* getBestChild(const double& C = 0);
 };

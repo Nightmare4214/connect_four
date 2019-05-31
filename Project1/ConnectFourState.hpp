@@ -13,7 +13,7 @@ private:
 	uint64_t board;
 	//所有的棋子
 	uint64_t mask;
-	
+
 public:
 	//最后一步
 	int lastMove;
@@ -21,7 +21,7 @@ public:
 	static const int HEIGHT = 6;
 	//回合数
 	int round;
-	ConnectFourState(const uint64_t& board = 0,const uint64_t& mask = 0, const int& round = 0);
+	ConnectFourState(const uint64_t& board = 0, const uint64_t& mask = 0, const int& round = 0);
 	ConnectFourState(const int& col, const uint64_t& board = 0, const uint64_t& mask = 0, const int& round = 0);
 	//获得当前的玩家
 	int getPlayer() const;

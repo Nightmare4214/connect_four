@@ -1,7 +1,8 @@
 #include "MCTSNode.hpp"
 #include<cfloat>
 #include<cmath>
-MCTSNode::MCTSNode():
+
+MCTSNode::MCTSNode() :
 	parent(nullptr),
 	childrenSize(0),
 	remainChildrenSize(0),
@@ -12,17 +13,17 @@ MCTSNode::MCTSNode():
 }
 
 MCTSNode::MCTSNode(const ConnectFourState & state) :
-	parent(nullptr), 
-	childrenSize(0), 
-	remainChildrenSize(0), 
-	qualityValue(0), 
-	visitTime(0), 
+	parent(nullptr),
+	childrenSize(0),
+	remainChildrenSize(0),
+	qualityValue(0),
+	visitTime(0),
 	expanded(false),
 	currentState(state)
 {
 }
 
-MCTSNode::MCTSNode(const ConnectFourState & preState, const int & col):
+MCTSNode::MCTSNode(const ConnectFourState & preState, const int & col) :
 	parent(nullptr),
 	childrenSize(0),
 	remainChildrenSize(0),
@@ -36,7 +37,7 @@ MCTSNode::MCTSNode(const ConnectFourState & preState, const int & col):
 
 void MCTSNode::init(const ConnectFourState& state)
 {
-	destory(this);
+	destroy(this);
 	parent = nullptr;
 	childrenSize = 0;
 	remainChildrenSize = 0;
@@ -52,11 +53,11 @@ void MCTSNode::update(const int & reward)
 	++visitTime;
 }
 
-void MCTSNode::destory(MCTSNode * t)
+void MCTSNode::destroy(MCTSNode *t)
 {
 	for (int i = 0; i < childrenSize; ++i) {
 		if (nullptr != t->children[i]) {
-			destory(t->children[i]);
+			destroy(t->children[i]);
 			delete t->children[i];
 			t->children[i] = nullptr;
 		}
@@ -84,7 +85,7 @@ bool MCTSNode::isAllExpanded()
 
 MCTSNode * MCTSNode::expand()
 {
-	
+
 	int id = rd() % remainChildrenSize;
 	--remainChildrenSize;
 	swap(children[id], children[remainChildrenSize]);

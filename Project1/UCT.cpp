@@ -34,11 +34,9 @@ int UCT::defaultPolicy(ConnectFourState t)
 {
 	int playerMoves[ConnectFourState::WIDTH];
 	int opponentWinMoves[2];
-	int winMove = -1;
 	int playerSize = 0;
 	int opponentSize = 0;
 	while (!t.isTerminal()) {
-		winMove = -1;
 		playerSize = 0;
 		opponentSize = 0;
 		//遍历选择
@@ -77,7 +75,7 @@ int UCT::defaultPolicy(ConnectFourState t)
 	return t.getResult();
 }
 
-void UCT::backUp(MCTSNode * expandNode,int reward)
+void UCT::backUp(MCTSNode * expandNode, int reward)
 {
 	if (-1 == root.currentState.getPlayer())reward = -reward;
 	if (reward < 0)reward = 0;
@@ -91,7 +89,6 @@ int UCT::getColByUCT()
 {
 	int playerMoves[ConnectFourState::WIDTH];
 	int opponentWinMoves[2];
-	int winMove = -1;
 	int playerSize = 0;
 	int opponentSize = 0;
 	ConnectFourState t = root.currentState;
@@ -114,7 +111,7 @@ int UCT::getColByUCT()
 			}
 		}
 	}
-	if (opponentSize>0) {
+	if (opponentSize > 0) {
 		return opponentWinMoves[0];
 	}
 	MCTSNode* expandNode = nullptr;

@@ -2,7 +2,7 @@
 #include<iostream>
 #include<string>
 using namespace std;
-int ConnectFour::getCorrectCol()
+int ConnectFour::getCorrectCol()const
 {
 	string temp;
 	int col;

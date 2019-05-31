@@ -2,7 +2,7 @@
 
 ConnectFourState::ConnectFourState(const uint64_t & board,
 	const uint64_t & mask,
-	const int & round) :board(board), mask(mask), round(round),lastMove(-1)
+	const int & round) :board(board), mask(mask), round(round), lastMove(-1)
 {
 }
 
@@ -31,7 +31,7 @@ uint64_t ConnectFourState::topMask(const int & col)
 
 bool ConnectFourState::canPlay(const int & col) const
 {
- 	return 0 == (mask&topMask(col));
+	return 0 == (mask&topMask(col));
 }
 
 uint64_t ConnectFourState::bottomMask(const int & col)
@@ -54,7 +54,7 @@ void ConnectFourState::play(const int & col)
 	++round;
 }
 
-bool ConnectFourState::isWinMove(const int & col, const bool & opponentFlag,const bool& predict) const
+bool ConnectFourState::isWinMove(const int & col, const bool & opponentFlag, const bool& predict) const
 {
 	uint64_t tempBoard = board;
 	if (opponentFlag) {
