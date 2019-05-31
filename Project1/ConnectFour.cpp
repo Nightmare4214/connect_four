@@ -10,15 +10,15 @@ int ConnectFour::getCorrectCol()
 		try {
 			col = stoi(temp);
 			if (col < 0 || col >= ConnectFourState::WIDTH) {
-				cout << "åˆ—ä¸æ­£ç¡®,è¯·é‡æ–°è¾“å…¥" << endl;
+				cout << "ÁÐ²»ÕýÈ·,ÇëÖØÐÂÊäÈë" << endl;
 			}
 			else if (!board.canPlay(col)) {
-				cout << "è¿™ä¸€åˆ—å·²ç»æ»¡äº†,è¯·é‡æ–°è¾“å…¥" << endl;
+				cout << "ÕâÒ»ÁÐÒÑ¾­ÂúÁË,ÇëÖØÐÂÊäÈë" << endl;
 			}
 			else return col;
 		}
 		catch (exception e) {
-			cout << "è¾“å…¥ä¸æ­£ç¡®,è¯·é‡æ–°è¾“å…¥" << endl;
+			cout << "ÊäÈë²»ÕýÈ·,ÇëÖØÐÂÊäÈë" << endl;
 		}
 	}
 	return 0;
@@ -33,8 +33,8 @@ void ConnectFour::pvp()
 	bool XFlag = true;
 	while (true) {
 #ifdef _DEBUG
-		if (XFlag)cout << "è½®åˆ°X" << endl;
-		else cout << "è½®åˆ°O" << endl;
+		if (XFlag)cout << "ÂÖµ½X" << endl;
+		else cout << "ÂÖµ½O" << endl;
 #endif // _DEBUG
 		col = getCorrectCol();
 		board.play(col);
@@ -53,54 +53,63 @@ void ConnectFour::pve(const bool & playerFirst)
 	int col;
 	while (true) {
 		if (playerFirst) {
-			if (XFlag)cout << "è½®åˆ°X" << endl;
-			else cout << "è½®åˆ°O" << endl;
+#ifdef _DEBUG
+			if (XFlag)cout << "ÂÖµ½X" << endl;
+			else cout << "ÂÖµ½O" << endl;
+#endif // _DEBUG
 			col = getCorrectCol();
 			board.play(col);
+#ifdef _DEBUG
 			board.printBoard();
+#endif // _DEBUG
 			if (board.isTerminal()) {
 				int getResult = board.getResult();
-				if (1 == getResult)cout << "XèŽ·å¾—äº†èƒœåˆ©";
-				else if (-1 == getResult)cout << "OèŽ·å¾—äº†èƒœåˆ©";
-				else cout << "å¹³å±€" << endl;
+				if (1 == getResult)cout << "X»ñµÃÁËÊ¤Àû";
+				else if (-1 == getResult)cout << "O»ñµÃÁËÊ¤Àû";
+				else cout << "Æ½¾Ö" << endl;
 				return;
 			}
 			XFlag = !XFlag;
-			if (XFlag)cout << "è½®åˆ°X" << endl;
-			else cout << "è½®åˆ°O" << endl;
+#ifdef _DEBUG
+			if (XFlag)cout << "ÂÖµ½X" << endl;
+			else cout << "ÂÖµ½O" << endl;
+#endif // _DEBUG
 			solver.init(board);
 			col = solver.getColByUCT();
 			cout << col << endl;
 		}
 		else {
-			if (XFlag)cout << "è½®åˆ°X" << endl;
-			else cout << "è½®åˆ°O" << endl;
+#ifdef _DEBUG
+			if (XFlag)cout << "ÂÖµ½X" << endl;
+			else cout << "ÂÖµ½O" << endl;
+#endif // _DEBUG
 			solver.init(board);
 			col = solver.getColByUCT();
 			cout << col << endl;
 			board.play(col);
+#ifdef _DEBUG
 			board.printBoard();
+#endif // _DEBUG
 			if (board.isTerminal()) {
 				int getResult = board.getResult();
-				if (1 == getResult)cout << "XèŽ·å¾—äº†èƒœåˆ©";
-				else if (-1 == getResult)cout << "OèŽ·å¾—äº†èƒœåˆ©";
-				else cout << "å¹³å±€" << endl;
+				if (1 == getResult)cout << "X»ñµÃÁËÊ¤Àû";
+				else if (-1 == getResult)cout << "O»ñµÃÁËÊ¤Àû";
+				else cout << "Æ½¾Ö" << endl;
 				return;
 			}
 			XFlag = !XFlag;
-			if (XFlag)cout << "è½®åˆ°X" << endl;
-			else cout << "è½®åˆ°O" << endl;
 			col = getCorrectCol();
 		}
 		board.play(col);
+#ifdef _DEBUG
 		board.printBoard();
+#endif // _DEBUG
 		if (board.isTerminal()) {
 			int getResult = board.getResult();
-			if (1 == getResult)cout << "XèŽ·å¾—äº†èƒœåˆ©";
-			else if (-1 == getResult)cout << "OèŽ·å¾—äº†èƒœåˆ©";
-			else cout << "å¹³å±€" << endl;
+			if (1 == getResult)cout << "X»ñµÃÁËÊ¤Àû";
+			else if (-1 == getResult)cout << "O»ñµÃÁËÊ¤Àû";
+			else cout << "Æ½¾Ö" << endl;
 			return;
 		}
 	}
 }
-
