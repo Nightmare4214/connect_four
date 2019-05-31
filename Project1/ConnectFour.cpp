@@ -149,11 +149,7 @@ void ConnectFour::AI_course_socket()
 	try
 	{
 		initSocket();
-
-		random_device rd;
-
 		sendData(TeamName);
-
 		string msg = recvData();
 		int out;
 		if (msg == Success) {
