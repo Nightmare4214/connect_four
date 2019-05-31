@@ -441,7 +441,7 @@ void AI_course_socket() {
 						alphaBetaPruning(maxDepth, -INF, INF, player, col);
 						play(col, player);
 						player = -player;
-						out = col - 1;
+						out = col + 1;
 					}
 					else {
 						int in = stoi(msg);
@@ -450,7 +450,7 @@ void AI_course_socket() {
 						alphaBetaPruning(maxDepth, -INF, INF, player, col);
 						play(col, player);
 						player = -player;
-						out = col - 1;
+						out = col + 1;
 					}
 					sendData(to_string(out));
 				}
@@ -468,6 +468,9 @@ void AI_course_socket() {
 	}
 }
 int main() {
+	for (int i = 0; i < WIDTH; i++) {
+		columnOrder[i] = WIDTH / 2 + (1 - 2 * (i % 2))*(i + 1) / 2;
+    }
 	AI_course_socket();
 	//    int temp;
 	//    cout << "选择1人人对战，0人机对战" << endl;
