@@ -43,8 +43,8 @@ int UCT::defaultPolicy(ConnectFourState t)
 		opponentSize = 0;
 		//遍历选择
 		for (int i = 0; i < ConnectFourState::WIDTH; ++i) {
+			//当前选手的制胜点
 			if (t.canPlay(i)) {
-				//当前选手制胜点
 				if (t.isWinMove(i, false, true)) {
 					t.play(i);
 					return t.getResult();
@@ -97,7 +97,7 @@ int UCT::getColByUCT()
 	ConnectFourState t = root.currentState;
 	for (int i = 0; i < ConnectFourState::WIDTH; ++i) {
 		if (t.canPlay(i)) {
-			//当前选手制胜点
+			//当前选手制胜
 			if (t.isWinMove(i, false, true)) {
 				return i;
 			}

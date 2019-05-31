@@ -26,22 +26,16 @@ int ConnectFour::getCorrectCol()
 
 void ConnectFour::pvp()
 {
-#ifdef _DEBUG
 	board.printBoard();
-#endif // _DEBUG
 	int col;
 	bool XFlag = true;
 	while (true) {
-#ifdef _DEBUG
 		if (XFlag)cout << "轮到X" << endl;
 		else cout << "轮到O" << endl;
-#endif // _DEBUG
 		col = getCorrectCol();
 		board.play(col);
-#ifdef _DEBUG
 		board.printBoard();
 		XFlag = !XFlag;
-#endif // _DEBUG
 		if (board.isTerminal())return;
 	}
 }
@@ -53,15 +47,11 @@ void ConnectFour::pve(const bool & playerFirst)
 	int col;
 	while (true) {
 		if (playerFirst) {
-#ifdef _DEBUG
 			if (XFlag)cout << "轮到X" << endl;
 			else cout << "轮到O" << endl;
-#endif // _DEBUG
 			col = getCorrectCol();
 			board.play(col);
-#ifdef _DEBUG
 			board.printBoard();
-#endif // _DEBUG
 			if (board.isTerminal()) {
 				int getResult = board.getResult();
 				if (1 == getResult)cout << "X获得了胜利";
@@ -70,26 +60,20 @@ void ConnectFour::pve(const bool & playerFirst)
 				return;
 			}
 			XFlag = !XFlag;
-#ifdef _DEBUG
 			if (XFlag)cout << "轮到X" << endl;
 			else cout << "轮到O" << endl;
-#endif // _DEBUG
 			solver.init(board);
 			col = solver.getColByUCT();
 			cout << col << endl;
 		}
 		else {
-#ifdef _DEBUG
 			if (XFlag)cout << "轮到X" << endl;
 			else cout << "轮到O" << endl;
-#endif // _DEBUG
 			solver.init(board);
 			col = solver.getColByUCT();
 			cout << col << endl;
 			board.play(col);
-#ifdef _DEBUG
 			board.printBoard();
-#endif // _DEBUG
 			if (board.isTerminal()) {
 				int getResult = board.getResult();
 				if (1 == getResult)cout << "X获得了胜利";
@@ -101,9 +85,7 @@ void ConnectFour::pve(const bool & playerFirst)
 			col = getCorrectCol();
 		}
 		board.play(col);
-#ifdef _DEBUG
 		board.printBoard();
-#endif // _DEBUG
 		if (board.isTerminal()) {
 			int getResult = board.getResult();
 			if (1 == getResult)cout << "X获得了胜利";
