@@ -1,6 +1,35 @@
 #include "AlphaBetaPruning.hpp"
 #include"TranspositionTable.hpp"
 
+void AlphaBetaPruning::addMove(const int & move, const int & score)
+{
+	int pos = moveSorterSize;
+	++moveSorterSize;
+	//插入排序
+	while (pos > 0 && moveSorter[pos - 1].score > score) {
+		moveSorter[pos] = moveSorter[pos - 1];
+		--pos;
+	}
+	moveSorter[pos].setData(move, score);
+}
+
+int AlphaBetaPruning::getNextMove()
+{
+	--moveSorterSize;
+	return moveSorter[moveSorterSize].move;
+}
+
+int AlphaBetaPruning::getScore(const uint64_t & currentMove)const
+{
+	uint64_t pos = getWinPositions(bitBoard | currentMove, mask);
+	int cnt = 0;
+	while (0 != pos) {
+		++cnt;
+		pos &= pos - 1;
+	}
+	return cnt;
+}
+
 uint64_t AlphaBetaPruning::topMask(const int & col)
 {
 	/*
@@ -20,19 +49,105 @@ uint64_t AlphaBetaPruning::columnMask(const int & col)
 	return (((1ULL << HEIGHT) - 1) << (col*(HEIGHT + 1)));
 }
 
-uint64_t AlphaBetaPruning::allBottomMask()
+uint64_t AlphaBetaPruning::getWinPositions(const uint64_t & position, const uint64_t & boardMask)
 {
-	uint64_t result = 1, temp = 1;
-	for (int i = 1; i < WIDTH; ++i) {
-		temp <<= (HEIGHT + 1);
-		result |= temp;
+	//垂直的(已经形成连续3个)
+	uint64_t result = (position << 1) & (position << 2) & (position << 3);
+
+	//水平
+	uint64_t temp = (position << (HEIGHT + 1))&(position << ((HEIGHT + 1) << 1));
+	//形成3个，制胜点在右边的
+	result |= temp & (position << (3 * (HEIGHT + 1)));
+	//xx_x这种
+	result |= temp & (position >> (HEIGHT + 1));
+	temp = (position >> (HEIGHT + 1))&(position >> ((HEIGHT + 1) << 1));
+	//形成3个，制胜点在左边的
+	result |= temp & (position >> (3 * (HEIGHT + 1)));
+	//x_xx这种
+	result |= temp & (position << (HEIGHT + 1));
+
+	//主对角线
+	temp = (position << HEIGHT)&(position << (HEIGHT << 1));
+	//形成3个，制胜点在右下方
+	result |= temp & (position << (3 * HEIGHT));
+	//斜着xx_x这种
+	result |= temp & (position >> HEIGHT);
+	temp = (position >> HEIGHT)&(position >> (HEIGHT << 1));
+	//形成3个，制胜点在左上方
+	result |= temp & (position >> (3 * HEIGHT));
+	//斜着x_xx这种
+	result |= temp & (position << HEIGHT);
+
+	//副对角线
+	temp = (position << (HEIGHT + 2))&(position << ((HEIGHT + 2) << 1));
+	//形成3个，制胜点在右上方
+	result |= temp & (position << (3 * (HEIGHT + 2)));
+	//斜着xx_x这种
+	result |= temp & (position >> (HEIGHT + 2));
+	temp = (position >> (HEIGHT + 2))&(position >> ((HEIGHT + 2) << 1));
+	//形成3个，制胜点在左下方
+	result |= temp & (position >> (3 * (HEIGHT + 2)));
+	//斜着x_xx这种
+	result |= temp & (position << (HEIGHT + 2));
+
+	return result & (boardValidMask ^ boardMask);
+}
+
+uint64_t AlphaBetaPruning::getAllValidPositions() const
+{
+	return (mask + allBottomMask)&boardValidMask;
+}
+
+uint64_t AlphaBetaPruning::getAllCurrentPlayerWinPositions() const
+{
+	return getWinPositions(bitBoard, mask);
+}
+
+uint64_t AlphaBetaPruning::getAllOpponentWinPositions() const
+{
+	return getWinPositions(bitBoard^mask, mask);
+}
+
+uint64_t AlphaBetaPruning::getAllNotLosePositions(int & forcedMove)
+{
+	//所有能下的位置
+	uint64_t validMask = getAllValidPositions();
+	//对手会赢的位置
+	uint64_t opponentWinPositions = getAllOpponentWinPositions();
+	//对手能赢的合法位置
+	uint64_t forcedMask = validMask & opponentWinPositions;
+	if (0 != forcedMask) {
+		//forcedMask-1相当于破坏第一个制胜点，如果与之后还不为0，说明双迫手
+		if (0 != (forcedMask&(forcedMask - 1))) {
+			for (int i = 0; i < WIDTH; ++i) {
+				//双迫手就随便找个地方下吧
+				if (0 != (columnMask(i)&forcedMask)) {
+					forcedMove = i;
+					return 0;
+				}
+			}
+			return 0;
+		}//对手只有一个制胜点,不下这就跪了
+		else return forcedMask;
 	}
-	return result;
+	//opponentWinPositions >> 1 将对手能赢的位置下移一位
+	uint64_t nextPosition = validMask & (~(opponentWinPositions >> 1));
+	if (0 == nextPosition) {
+		for (int i = 0; i < WIDTH; ++i) {
+			//下完对手就赢了，然而没别的选择了
+			if (0 != (columnMask(i)&validMask)) {
+				forcedMove = i;
+				return 0;
+			}
+		}
+		return 0;
+	}
+	else return nextPosition;
 }
 
 uint64_t AlphaBetaPruning::getKey() const
 {
-	return bitBoard + mask + allBottomMask();
+	return bitBoard + mask + allBottomMask;
 }
 
 int AlphaBetaPruning::getCorrectCol() const
@@ -57,7 +172,7 @@ int AlphaBetaPruning::getCorrectCol() const
 	return 0;
 }
 
-int AlphaBetaPruning::evaluate(const int & player) const
+int AlphaBetaPruning::evaluate(const int & player, const bool& opponentFlag) const
 {
 	int opponent = -player;
 	int score = 0;
@@ -97,6 +212,7 @@ int AlphaBetaPruning::evaluate(const int & player) const
 			else if (3 == playerCnt)score += 50000;
 			else if (2 == playerCnt)score += 100;
 			else if (1 == playerCnt)score += 50;
+
 		}
 	}
 	//主对角线y=-x+bias
@@ -158,7 +274,7 @@ int AlphaBetaPruning::alphaBetaPruning(int depth, int alpha, int beta, int playe
 {
 	++searchedPosition;
 	//获得hash值
-	int hashVal = table.probeHash(getKey(), maxDepth - depth, alpha, beta);
+	int hashVal = table.probeHash(getKey(), depth, alpha, beta);
 	int hashFlag = TranspositionTableNode::ALPHA_FLAG;
 	//已经搜过了，可以直接返回
 	if (TranspositionTable::unknown != hashVal) {
@@ -173,24 +289,68 @@ int AlphaBetaPruning::alphaBetaPruning(int depth, int alpha, int beta, int playe
 			return (INF >> 1) - HEIGHT * WIDTH - round;
 		}
 	}
+	int twoCnt = 0, forcedMove;
+	//自己的活二
+	for (int i = 0; i < WIDTH; ++i) {
+		if (!canPlay(i))continue;
+		uint64_t playedMask = ((mask + bottomMask(i)) & columnMask(i));
+		uint64_t winTwo = (getWinPositions(bitBoard | playedMask, mask | playedMask)&getAllValidPositions());
+		if (0 != (winTwo&(winTwo - 1))) {
+			move = i;
+			return (INF >> 1) - HEIGHT * WIDTH - round - 2;
+		}
+	}
+	//下一步能下的
+	uint64_t nextPosition = getAllNotLosePositions(forcedMove);
+	//双迫手
+	if (0 == nextPosition) {
+		move = forcedMove;
+		return (INF >> 1) - HEIGHT * WIDTH - round - 1;
+	}
+	//对手活二
+	twoCnt = 0;
+	for (int i = 0; i < WIDTH; ++i) {
+		//获得要下的位置
+		uint64_t playedMask = (nextPosition&columnMask(i));
+		if (0 == playedMask)continue;
+
+		uint64_t opponent = (getWinPositions(((bitBoard^mask) | playedMask), mask | playedMask)&getAllValidPositions());
+		//活二下下去就是活3
+		if (0 != (opponent & (opponent - 1))) {
+			++twoCnt;
+			nextPosition = playedMask;
+			break;
+		}
+	}
+
 	//达到搜索深度了
 	if (depth <= 0) {
 		//得分=自己的-对手的
 		int tempVal = evaluate(player) - evaluate(-player);
-		table.recordHash(getKey(), tempVal, maxDepth - depth, TranspositionTableNode::EXACT_FLAG);
+		table.recordHash(getKey(), tempVal, depth, TranspositionTableNode::EXACT_FLAG);
 		return tempVal;
 	}
+
+	moveSorterSize = 0;
+	for (int i = WIDTH - 1; i >= 0; --i) {
+		uint64_t playedMask = nextPosition & columnMask(columnOrder[i]);
+		if (0 == playedMask)continue;
+		addMove(columnOrder[i], getScore(playedMask));
+	}
+
 	int tempMove;
-	for (const int &i : columnOrder) {
-		if (!canPlay(i))continue;
+	while (0 != moveSorterSize) {
+		int i = getNextMove();
+		//if (0 == (nextPosition & columnMask(i)))continue;
 		play(i, player);
+		++currentDepth;
 		int val;
 		if (HEIGHT*WIDTH == round)val = 0;
 		else val = -alphaBetaPruning(depth - 1, -beta, -alpha, -player, tempMove);
 		undo(i);
-
+		--currentDepth;
 		if (val >= beta) {
-			table.recordHash(getKey(), beta, maxDepth - depth, TranspositionTableNode::BETA_FLAG);
+			table.recordHash(getKey(), beta, depth, TranspositionTableNode::BETA_FLAG);
 			return beta;
 		}
 		if (val > alpha) {
@@ -199,7 +359,7 @@ int AlphaBetaPruning::alphaBetaPruning(int depth, int alpha, int beta, int playe
 			alpha = val;
 		}
 	}
-	table.recordHash(getKey(), maxDepth - depth, alpha, hashFlag);
+	table.recordHash(getKey(), depth, alpha, hashFlag);
 	return alpha;
 }
 
@@ -208,6 +368,7 @@ int AlphaBetaPruning::getColByAlphaBetaPruning(const int & player)
 	int opponentWinMove[2];
 	int size = 0;
 	for (int i = 0; i < WIDTH; ++i) {
+		//下一步就能赢
 		if (isWinMove(i, true))return i;
 		else if (isWinMove(i, true, true)) {
 			if (size < 2) {
@@ -216,11 +377,14 @@ int AlphaBetaPruning::getColByAlphaBetaPruning(const int & player)
 			}
 		}
 	}
+	//对方至少有一个迫手，就下着了
 	if (0 != size)return opponentWinMove[0];
-	table.reset();
+
+	//table.reset();
 	int col;
 	ttHitCnt = 0;
 	searchedPosition = 0;
+	currentDepth = 0;
 	alphaBetaPruning(maxDepth, -INF, INF, player, col);
 	cout << "hit" << ttHitCnt << endl;
 	cout << "all" << searchedPosition << endl;
@@ -465,8 +629,10 @@ void AlphaBetaPruning::AI_course_socket()
 					else {
 						int in = stoi(msg);
 						play(in - 1, player);
+						cout << "对方下了" << in - 1 << endl;
 						player = -player;
 						col = getColByAlphaBetaPruning(player);
+						cout << "AI算出" << col << endl;
 						play(col, player);
 						player = -player;
 						out = col + 1;

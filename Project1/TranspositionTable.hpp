@@ -33,7 +33,7 @@ public:
 	void reset();
 	/**
 	 * 探测置换表中有没有当前局面
-	 * @param depth 当前深度
+	 * @param depth 搜索了depth层得到的得分
 	 * @param alpha 当前alpha
 	 * @param beta 当前beta
 	 * @return 找到则返回局面得分，找不到返回unknown
@@ -42,7 +42,7 @@ public:
 	/**
 	 * 置换表中记录局面
 	 * @param value 局面得分
-	 * @param depth 当前深度
+	 * @param depth 搜索了depth层得到的得分
 	 * @param flag 评分值类型
 	 */
 	void recordHash(const uint64_t& key, const int& value, const int& depth, const int& flag);

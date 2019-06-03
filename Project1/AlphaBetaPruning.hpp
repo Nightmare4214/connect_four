@@ -8,12 +8,34 @@
 #include<iostream>
 #include<string>
 using namespace std;
+
+static constexpr uint64_t getAllBottomMask(const int& WIDTH, const int& HEIGHT) {
+	uint64_t result = 1, temp = 1;
+	for (int i = 1; i < WIDTH; ++i) {
+		temp <<= (HEIGHT + 1);
+		result |= temp;
+	}
+	return result;
+}
+
+class Entry {
+public:
+	int score;
+	int move;
+	Entry(const int &move = 0, const int &score = 0) :score(score), move(move) {}
+	void setData(const int &move, const int &score) {
+		this->move = move;
+		this->score = score;
+	}
+};
+
 class AlphaBetaPruning {
 	//高和宽
 	static const int HEIGHT = 6, WIDTH = 8;
 	//最大深度
-	static const int maxDepth = 12;
-
+	static const int maxDepth = 14;
+	//目前的深度
+	int currentDepth;
 	//服务端ip
 	const char *IP = "127.0.0.1";
 	//服务端的端口
@@ -22,6 +44,18 @@ class AlphaBetaPruning {
 	const string TeamName = "Nightmare_alpha_beta_pruning_v2";
 
 	TranspositionTable table;
+
+	Entry moveSorter[WIDTH];
+	int moveSorterSize;
+
+	//添加下一步
+	void addMove(const int& move, const int& score);
+
+	//获得下一步
+	int getNextMove();
+
+	//获得下下去的分数
+	int getScore(const uint64_t& currentMove)const;
 
 	//无穷大
 	static const int INF = 0x3f3f3f3f;
@@ -53,8 +87,29 @@ class AlphaBetaPruning {
 	//取整列
 	static uint64_t columnMask(const int & col);
 
-	//底部全1
-	static uint64_t allBottomMask();
+	//底下全1
+	static const uint64_t allBottomMask = getAllBottomMask(WIDTH, HEIGHT);
+	//棋盘所有的合法位置
+	static const uint64_t boardValidMask = allBottomMask * ((1ULL << HEIGHT) - 1);
+
+	//获得position局面所有能赢的位置(包括悬空的)
+	static uint64_t getWinPositions(const uint64_t& position, const uint64_t &mask);
+
+	//获得所有下一步能下的地方
+	uint64_t getAllValidPositions()const;
+
+	//获得当前玩家所有能赢的合法位置
+	uint64_t getAllCurrentPlayerWinPositions()const;
+
+	//获得当前玩家所有能赢的合法位置
+	uint64_t getAllOpponentWinPositions()const;
+
+	/**
+	 * 获得下一步不会输的位置
+	 * @param forcedMove 如果对手有两个制胜点，则记录在这个参数里
+	 * @return 下一步不会输的位置
+	 */
+	uint64_t getAllNotLosePositions(int& forcedMove);
 
 	uint64_t getKey()const;
 
@@ -66,9 +121,10 @@ class AlphaBetaPruning {
 	/**
 	 * 评估局面得分：规则为所有的空位置放上棋子后有几种赢法
 	 * @param player 1代表X,-1代表O
+	 * @param opponentFlag 是否是对手
 	 * @return 得分
 	 */
-	int evaluate(const int& player)const;
+	int evaluate(const int& player, const bool& opponentFlag = false)const;
 	/**
 	 * alpha-beta剪枝
 	 * @param depth 搜索深度
