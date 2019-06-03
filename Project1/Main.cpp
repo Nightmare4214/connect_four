@@ -27,7 +27,7 @@ int main() {
 	//人先手
 	//t.pve(true);
 	//人后手
-	//t.pve(false);
-	t.AI_course_socket();
+	t.pve(false);
+	//t.AI_course_socket();
 	return 0;
 }

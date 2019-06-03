@@ -141,15 +141,15 @@ int AlphaBetaPruning::getCorrectCol() const
 		try {
 			col = stoi(temp);
 			if (col < 0 || col >= WIDTH) {
-				cout << "列不正确,请重新输入" << endl;
+				_cprintf("row ERROR,please enter the correct row\r\n");
 			}
 			else if (!canPlay(col)) {
-				cout << "这一列已经满了,请重新输入" << endl;
+				_cprintf("row full,please enter the correct row\r\n");
 			}
 			else return col;
 		}
 		catch (exception e) {
-			cout << "输入不正确,请重新输入" << endl;
+			_cprintf("row ERROR,please enter the correct row\r\n");
 		}
 	}
 	return 0;
@@ -376,7 +376,6 @@ int AlphaBetaPruning::getColByAlphaBetaPruning(const int & player)
 	int col;
 	ttHitCnt = 0;
 	searchedPosition = 0;
-	currentDepth = 0;
 	alphaBetaPruning(maxDepth, -INF, INF, player, col);
 	_cprintf("hit:%d\r\n", ttHitCnt);
 	_cprintf("all:%d\r\n", searchedPosition);
@@ -409,11 +408,9 @@ void AlphaBetaPruning::closeSocket()
 void AlphaBetaPruning::sendData(const string & msg) const
 {
 	if (send(sockClient, msg.data(), msg.length(), 0) != SOCKET_ERROR) {
-		//printf("Client:%s\n", msg.data());
 		_cprintf("Client:%s\r\n", msg.data());
 	}
 	else {
-		//printf("发送失败!\n");
 		_cprintf("send error!!!\r\n");
 	}
 }
@@ -423,13 +420,11 @@ string AlphaBetaPruning::recvData() const
 	char message[Len] = { 0 };
 	if (recv(sockClient, message, Len, 0) < 0)
 	{
-		//printf("接收失败!\n");
 		_cprintf("receive error!!!\r\n");
 		return GameOver;
 	}
 	else
 	{
-		//printf("Server:%s\n", message);
 		_cprintf("Server:%s\r\n", message);
 		string msg(message);
 		return msg.substr(0, msg.find_first_of('\r'));
@@ -445,19 +440,19 @@ AlphaBetaPruning::AlphaBetaPruning()
 
 void AlphaBetaPruning::printBoard() const
 {
-	cout << "***********************" << endl;
+	_cprintf("***********************\r\n");
 	for (int j = HEIGHT - 1; j >= 0; --j) {
 		for (int i = 0; i < WIDTH; ++i) {
-			cout << '|';
-			if (0 == board[i][j])cout << '_';
-			else if (1 == board[i][j])cout << 'X';
-			else cout << 'O';
+			_cprintf("|");
+			if (0 == board[i][j])_cprintf("_");
+			else if (1 == board[i][j])_cprintf("X");
+			else _cprintf("O");
 		}
-		cout << '|' << endl;
+		_cprintf("|\r\n");
 	}
-	for (int i = 0; i < WIDTH; ++i)cout << ' ' << i;
-	cout << ' ' << endl;
-	cout << "***********************" << endl;
+	for (int i = 0; i < WIDTH; ++i)_cprintf(" %d", i);
+	_cprintf(" \r\n");
+	_cprintf("***********************\r\n");
 }
 
 bool AlphaBetaPruning::canPlay(const int & col) const
@@ -539,13 +534,13 @@ bool AlphaBetaPruning::isWinMove(const int& lastCol, const bool& predict, const 
 bool AlphaBetaPruning::isEnd(const int & lastCol, const int & player) const
 {
 	if (isWinMove(lastCol, false)) {
-		if (1 == player)cout << "X";
-		else cout << "O";
-		cout << "获得了胜利" << endl;
+		if (1 == player)_cprintf("X");
+		else _cprintf("O");
+		_cprintf("Win\r\n");
 		return true;
 	}
 	else if (HEIGHT*WIDTH == round) {
-		cout << "平局" << endl;
+		_cprintf("draw\r\n");
 		return true;
 	}
 	else return false;
@@ -558,8 +553,8 @@ void AlphaBetaPruning::pvp()
 	//是否轮到X
 	int player = 1;
 	while (true) {
-		if (player)cout << "轮到X下" << endl;
-		else cout << "轮到O下" << endl;
+		if (player)_cprintf("X turn\r\n");
+		else _cprintf("O turn\r\n");
 		col = getCorrectCol();
 		play(col, player);
 		printBoard();
@@ -575,25 +570,25 @@ void AlphaBetaPruning::pve(const bool & firstFlag)
 	printBoard();
 	while (true) {
 		if (firstFlag) {
-			cout << "轮到X" << endl;
+			_cprintf("X turn\r\n");
 			col = getCorrectCol();
 			play(col, player);
 			printBoard();
 			if (isEnd(col, player))return;
 			player = -player;
-			cout << "轮到O" << endl;
+			_cprintf("O turn\r\n");
 			col = getColByAlphaBetaPruning(player);
-			cout << col << endl;
+			_cprintf("%d\r\n", col);
 		}
 		else {
-			cout << "轮到X" << endl;
+			_cprintf("X turn\r\n");
 			col = getColByAlphaBetaPruning(player);
-			cout << col << endl;
+			_cprintf("%d\r\n", col);
 			play(col, player);
 			printBoard();
 			if (isEnd(col, player))return;
 			player = -player;
-			cout << "轮到O" << endl;
+			_cprintf("O turn\r\n");
 			col = getCorrectCol();
 		}
 		play(col, player);
@@ -616,9 +611,7 @@ void AlphaBetaPruning::AI_course_socket()
 		if (msg == Success) {
 			while (true) {
 				msg = recvData();
-
 				if (!(msg == GameOver)) {
-
 					if (msg == Begin) {
 						col = getColByAlphaBetaPruning(player);
 						play(col, player);

@@ -35,6 +35,7 @@ public:
 	static const int HEIGHT = 6, WIDTH = 8;
 	//最大深度
 	static const int maxDepth = 14;
+
 private:
 	//目前的深度
 	int currentDepth;
