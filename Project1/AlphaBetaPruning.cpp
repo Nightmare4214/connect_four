@@ -1,0 +1,488 @@
+#include "AlphaBetaPruning.hpp"
+#include"TranspositionTable.hpp"
+
+uint64_t AlphaBetaPruning::topMask(const int & col)
+{
+	/*
+	1ULL << (HEIGHT - 1)将1移到HEIGHT-1的位置(也就是棋盘的最高)
+	然后移到第col列
+	*/
+	return (1ULL << (HEIGHT - 1)) << ((HEIGHT + 1)*col);
+}
+
+uint64_t AlphaBetaPruning::bottomMask(const int & col)
+{
+	return 1ULL << ((HEIGHT + 1)*col);
+}
+
+uint64_t AlphaBetaPruning::columnMask(const int & col)
+{
+	return (((1ULL << HEIGHT) - 1) << (col*(HEIGHT + 1)));
+}
+
+uint64_t AlphaBetaPruning::allBottomMask()
+{
+	uint64_t result = 1, temp = 1;
+	for (int i = 1; i < WIDTH; ++i) {
+		temp <<= (HEIGHT + 1);
+		result |= temp;
+	}
+	return result;
+}
+
+uint64_t AlphaBetaPruning::getKey() const
+{
+	return bitBoard + mask + allBottomMask();
+}
+
+int AlphaBetaPruning::getCorrectCol() const
+{
+	string temp;
+	int col;
+	while (cin >> temp) {
+		try {
+			col = stoi(temp);
+			if (col < 0 || col >= WIDTH) {
+				cout << "列不正确,请重新输入" << endl;
+			}
+			else if (!canPlay(col)) {
+				cout << "这一列已经满了,请重新输入" << endl;
+			}
+			else return col;
+		}
+		catch (exception e) {
+			cout << "输入不正确,请重新输入" << endl;
+		}
+	}
+	return 0;
+}
+
+int AlphaBetaPruning::evaluate(const int & player) const
+{
+	int opponent = -player;
+	int score = 0;
+	//竖着的
+	for (int i = 0; i < WIDTH; ++i) {
+		for (int j = 0; j <= HEIGHT - 4; ++j) {
+			int playerCnt = 0, opponentCnt = 0;
+			for (int k = 0; k < 4; ++k) {
+				int temp = board[i][j + k];
+				if (temp == player)++playerCnt;
+				else if (temp == opponent) {
+					++opponentCnt;
+					break;
+				}
+			}
+			if (opponentCnt != 0)continue;
+			else if (4 == playerCnt)score += 1000000;
+			else if (3 == playerCnt)score += 100000;
+			else if (2 == playerCnt)score += 100;
+			else if (1 == playerCnt)score += 50;
+		}
+	}
+	//横直的
+	for (int j = 0; j < HEIGHT; ++j) {
+		for (int i = 0; i <= WIDTH - 4; ++i) {
+			int playerCnt = 0, opponentCnt = 0;
+			for (int k = 0; k < 4; ++k) {
+				int temp = board[i + k][j];
+				if (temp == player)++playerCnt;
+				else if (temp == opponent) {
+					++opponentCnt;
+					break;
+				}
+			}
+			if (opponentCnt != 0)continue;
+			else if (4 == playerCnt)score += 1000000;
+			else if (3 == playerCnt)score += 50000;
+			else if (2 == playerCnt)score += 100;
+			else if (1 == playerCnt)score += 50;
+		}
+	}
+	//主对角线y=-x+bias
+	for (int bias = 3; bias <= HEIGHT + WIDTH - 5; ++bias) {
+		int x = 0, y = bias;
+		if (y >= HEIGHT) {
+			y = HEIGHT - 1;
+			x = -y + bias;
+		}
+		while (x < WIDTH&&y >= 0 && x + 3 < WIDTH&&y - 3 >= 0) {
+			int playerCnt = 0, opponentCnt = 0;
+			for (int k = 0; k < 4; ++k) {
+				int temp = board[x + k][y - k];
+				if (temp == player)++playerCnt;
+				else if (temp == opponent) {
+					++opponentCnt;
+					break;
+				}
+			}
+			++x;
+			--y;
+			if (opponentCnt != 0)continue;
+			else if (4 == playerCnt)score += 1000000;
+			else if (3 == playerCnt)score += 30000;
+			else if (2 == playerCnt)score += 100;
+			else if (1 == playerCnt)score += 50;
+		}
+	}
+	//副对角线y=x+bias
+	for (int bias = HEIGHT - 4; bias >= 4 - WIDTH; --bias) {
+		int x = 0, y = bias;
+		if (y < 0) {
+			y = 0;
+			x = -bias;
+		}
+		while (x >= 0 && y < HEIGHT&&x + 3 < WIDTH&&y + 3 < HEIGHT) {
+			int playerCnt = 0, opponentCnt = 0;
+			for (int k = 0; k < 4; ++k) {
+				int temp = board[x + k][y + k];
+				if (temp == player)++playerCnt;
+				else if (temp == opponent) {
+					++opponentCnt;
+					break;
+				}
+			}
+			++x;
+			++y;
+			if (opponentCnt != 0)continue;
+			else if (4 == playerCnt)score += 1000000;
+			else if (3 == playerCnt)score += 30000;
+			else if (2 == playerCnt)score += 100;
+			else if (1 == playerCnt)score += 50;
+		}
+	}
+	return score;
+}
+
+int AlphaBetaPruning::alphaBetaPruning(int depth, int alpha, int beta, int player, int & move)
+{
+	++searchedPosition;
+	//获得hash值
+	int hashVal = table.probeHash(getKey(), maxDepth - depth, alpha, beta);
+	int hashFlag = TranspositionTableNode::ALPHA_FLAG;
+	//已经搜过了，可以直接返回
+	if (TranspositionTable::unknown != hashVal) {
+		++ttHitCnt;
+		return hashVal;
+	}
+	//先判断下了之后会不会立即胜利
+	for (const int &i : columnOrder) {
+		if (!canPlay(i))continue;
+		if (isWinMove(i, true)) {
+			move = i;
+			return (INF >> 1) - HEIGHT * WIDTH - round;
+		}
+	}
+	//达到搜索深度了
+	if (depth <= 0) {
+		//得分=自己的-对手的
+		int tempVal = evaluate(player) - evaluate(-player);
+		table.recordHash(getKey(), tempVal, maxDepth - depth, TranspositionTableNode::EXACT_FLAG);
+		return tempVal;
+	}
+	int tempMove;
+	for (const int &i : columnOrder) {
+		if (!canPlay(i))continue;
+		play(i, player);
+		int val;
+		if (HEIGHT*WIDTH == round)val = 0;
+		else val = -alphaBetaPruning(depth - 1, -beta, -alpha, -player, tempMove);
+		undo(i);
+
+		if (val >= beta) {
+			table.recordHash(getKey(), beta, maxDepth - depth, TranspositionTableNode::BETA_FLAG);
+			return beta;
+		}
+		if (val > alpha) {
+			hashFlag = TranspositionTableNode::EXACT_FLAG;
+			move = i;
+			alpha = val;
+		}
+	}
+	table.recordHash(getKey(), maxDepth - depth, alpha, hashFlag);
+	return alpha;
+}
+
+int AlphaBetaPruning::getColByAlphaBetaPruning(const int & player)
+{
+	int opponentWinMove[2];
+	int size = 0;
+	for (int i = 0; i < WIDTH; ++i) {
+		if (isWinMove(i, true))return i;
+		else if (isWinMove(i, true, true)) {
+			if (size < 2) {
+				opponentWinMove[size] = i;
+				++size;
+			}
+		}
+	}
+	if (0 != size)return opponentWinMove[0];
+	table.reset();
+	int col;
+	ttHitCnt = 0;
+	searchedPosition = 0;
+	alphaBetaPruning(maxDepth, -INF, INF, player, col);
+	cout << "hit" << ttHitCnt << endl;
+	cout << "all" << searchedPosition << endl;
+	cout << "命中率" << ttHitCnt * 100.0 / searchedPosition << "%" << endl;
+	return col;
+}
+
+void AlphaBetaPruning::initSocket()
+{
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
+	//新建客户端socket
+	sockClient = socket(AF_INET, SOCK_STREAM, 0);
+	//定义要连接的服务端地址
+	addrServer.sin_family = AF_INET;
+	addrServer.sin_port = htons(PORT);//连接端口
+	addrServer.sin_addr.S_un.S_addr = inet_addr(IP);
+	if (connect(sockClient, (SOCKADDR*)&addrServer, sizeof(addrServer)) < 0)
+	{
+		throw "未连接到服务器\n";
+	}
+}
+
+void AlphaBetaPruning::closeSocket()
+{
+	closesocket(sockClient);
+	WSACleanup();
+}
+
+void AlphaBetaPruning::sendData(const string & msg) const
+{
+	if (send(sockClient, msg.data(), msg.length(), 0) != SOCKET_ERROR)
+		printf("Client:%s\n", msg.data());
+	else
+		printf("发送失败!\n");
+}
+
+string AlphaBetaPruning::recvData() const
+{
+	char message[Len] = { 0 };
+	if (recv(sockClient, message, Len, 0) < 0)
+	{
+		printf("接收失败!\n");
+		return GameOver;
+	}
+	else
+	{
+		printf("Server:%s\n", message);
+		string msg(message);
+		return msg.substr(0, msg.find_first_of('\r'));
+	}
+}
+
+AlphaBetaPruning::AlphaBetaPruning()
+{
+	for (int i = 0; i < WIDTH; i++) {
+		columnOrder[i] = WIDTH / 2 + (1 - 2 * (i % 2))*(i + 1) / 2;
+	}
+}
+
+void AlphaBetaPruning::printBoard() const
+{
+	cout << "***********************" << endl;
+	for (int j = HEIGHT - 1; j >= 0; --j) {
+		for (int i = 0; i < WIDTH; ++i) {
+			cout << '|';
+			if (0 == board[i][j])cout << '_';
+			else if (1 == board[i][j])cout << 'X';
+			else cout << 'O';
+		}
+		cout << '|' << endl;
+	}
+	for (int i = 0; i < WIDTH; ++i)cout << ' ' << i;
+	cout << ' ' << endl;
+	cout << "***********************" << endl;
+}
+
+bool AlphaBetaPruning::canPlay(const int & col) const
+{
+	return 0 == (mask & topMask(col));
+}
+
+void AlphaBetaPruning::play(const int & col, const int & player)
+{
+	board[col][currentHeight[col]] = player;
+	bitBoard ^= mask;
+	mask |= mask + bottomMask(col);
+	++currentHeight[col];
+	++round;
+
+}
+
+void AlphaBetaPruning::undo(const int & col)
+{
+
+	--currentHeight[col];
+	board[col][currentHeight[col]] = 0;
+	mask &= ~((1ULL << currentHeight[col]) << (col*(HEIGHT + 1)));
+	bitBoard ^= mask;
+	--round;
+}
+
+void AlphaBetaPruning::initPlay(const string & s)
+{
+	int player = 1;
+	for (const char &c : s) {
+		play(c - '1', player);
+		player = -player;
+	}
+}
+
+bool AlphaBetaPruning::isWinMove(const int& lastCol, const bool& predict, const bool& isOpponent) const
+{
+	uint64_t tempBoard = bitBoard;
+	//预测
+	if (predict) {
+		if (isOpponent)tempBoard ^= mask;
+		//play之前总是显示自己的，所以将要下的列加上1就好
+		tempBoard |= (mask + bottomMask(lastCol))&columnMask(lastCol);
+	}
+	else {
+		//play之后总是显示对手的，所以异或一下显示自己的
+		tempBoard ^= mask;
+	}
+	/*
+	垂直
+	tempBorad   tempMask   tempMask&(tempMask >> 2
+	1         0 0        0 0
+	1         1 1        0 0
+	1         1 1        0 0
+	1         1 1        1 1
+	0         1 0        1 0
+	0         0 0        1 0
+	*/
+	uint64_t tempMask = tempBoard & (tempBoard >> 1);
+	if (0 != (tempMask&(tempMask >> 2)))return true;
+
+	//水平
+	//右移height+1相当于移到前一列同一行
+	tempMask = tempBoard & (tempBoard >> (HEIGHT + 1));
+	if (0 != (tempMask&(tempMask >> ((HEIGHT + 1) << 1))))return true;
+
+	//副对角线
+	//右移height+2相当于移到前一列同一行的下一个
+	tempMask = tempBoard & (tempBoard >> (HEIGHT + 2));
+	if (0 != (tempMask&(tempMask >> ((HEIGHT + 2) << 1))))return true;
+
+	//主对角线
+	//右移height+1相当于移到前一列同一行的上一个
+	tempMask = tempBoard & (tempBoard >> HEIGHT);
+	return (0 != (tempMask&(tempMask >> (HEIGHT << 1))));
+}
+
+bool AlphaBetaPruning::isEnd(const int & lastCol, const int & player) const
+{
+	if (isWinMove(lastCol, false)) {
+		if (1 == player)cout << "X";
+		else cout << "O";
+		cout << "获得了胜利" << endl;
+		return true;
+	}
+	else if (HEIGHT*WIDTH == round) {
+		cout << "平局" << endl;
+		return true;
+	}
+	else return false;
+}
+
+void AlphaBetaPruning::pvp()
+{
+	printBoard();
+	int col;
+	//是否轮到X
+	int player = 1;
+	while (true) {
+		if (player)cout << "轮到X下" << endl;
+		else cout << "轮到O下" << endl;
+		col = getCorrectCol();
+		play(col, player);
+		printBoard();
+		if (isEnd(col, player))return;
+		player = -player;
+	}
+}
+
+void AlphaBetaPruning::pve(const bool & firstFlag)
+{
+	int col;
+	int player = 1;
+	printBoard();
+	while (true) {
+		if (firstFlag) {
+			cout << "轮到X" << endl;
+			col = getCorrectCol();
+			play(col, player);
+			printBoard();
+			if (isEnd(col, player))return;
+			player = -player;
+			cout << "轮到O" << endl;
+			col = getColByAlphaBetaPruning(player);
+			cout << col << endl;
+		}
+		else {
+			cout << "轮到X" << endl;
+			col = getColByAlphaBetaPruning(player);
+			cout << col << endl;
+			play(col, player);
+			printBoard();
+			if (isEnd(col, player))return;
+			player = -player;
+			cout << "轮到O" << endl;
+			col = getCorrectCol();
+		}
+		play(col, player);
+		printBoard();
+		if (isEnd(col, player))return;
+		player = -player;
+	}
+}
+
+void AlphaBetaPruning::AI_course_socket()
+{
+	int col;
+	int player = 1;
+	try
+	{
+		initSocket();
+		sendData(TeamName);
+		string msg = recvData();
+		int out;
+		if (msg == Success) {
+			while (true) {
+				msg = recvData();
+
+				if (!(msg == GameOver)) {
+
+					if (msg == Begin) {
+						col = getColByAlphaBetaPruning(player);
+						play(col, player);
+						player = -player;
+						out = col + 1;
+					}
+					else {
+						int in = stoi(msg);
+						play(in - 1, player);
+						player = -player;
+						col = getColByAlphaBetaPruning(player);
+						play(col, player);
+						player = -player;
+						out = col + 1;
+					}
+					sendData(to_string(out));
+				}
+				else {
+					break;
+				}
+			}
+		}
+
+		closeSocket();
+	}
+	catch (exception e)
+	{
+		printf(e.what());
+	}
+}

@@ -30,7 +30,7 @@ private:
 	//游戏结束
 	const string GameOver = "game_over";
 	//队名
-	const string TeamName = "faQ";
+	const string TeamName = "Nightmare_UCT";
 	/**
 	 * 初始化socket
 	 */

@@ -30,6 +30,12 @@
     <ClCompile Include="UCT.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="AlphaBetaPruning.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TranspositionTable.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectFour.hpp">
@@ -42,6 +48,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="UCT.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="AlphaBetaPruning.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TranspositionTable.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

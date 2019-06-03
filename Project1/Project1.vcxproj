@@ -130,16 +130,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AlphaBetaPruning.cpp" />
     <ClCompile Include="ConnectFour.cpp" />
     <ClCompile Include="ConnectFourState.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MCTSNode.cpp" />
+    <ClCompile Include="TranspositionTable.cpp" />
     <ClCompile Include="UCT.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AlphaBetaPruning.hpp" />
     <ClInclude Include="ConnectFour.hpp" />
     <ClInclude Include="ConnectFourState.hpp" />
     <ClInclude Include="MCTSNode.hpp" />
+    <ClInclude Include="TranspositionTable.hpp" />
     <ClInclude Include="UCT.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
