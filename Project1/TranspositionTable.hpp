@@ -20,8 +20,10 @@ public:
 	int depth;
 	//评估值flag
 	int flag;
-	TranspositionTableNode() :key(0), value(0), depth(0), flag(0) {}
-	void setValue(const uint64_t& key, const int& value, const int& depth, const int& flag);
+	//最好的步骤
+	int bestMove;
+	TranspositionTableNode() :key(0), value(0), depth(0), flag(0), bestMove(-1) {}
+	void setValue(const uint64_t& key, const int& value, const int& depth, const int& flag, const int& bestMove);
 };
 class TranspositionTable {
 public:
@@ -36,14 +38,16 @@ public:
 	 * @param depth 搜索了depth层得到的得分
 	 * @param alpha 当前alpha
 	 * @param beta 当前beta
+	 * @param bestMove 用来接收最好的步骤
+	 * @param findedFlag 接收是否在置换表中找到
 	 * @return 找到则返回局面得分，找不到返回unknown
 	 */
-	int probeHash(const uint64_t & key, const int & depth, const int & alpha, const int & beta);
+	int probeHash(const uint64_t & key, const int & depth, const int & alpha, const int & beta, int& bestMove, bool& findedFlag);
 	/**
 	 * 置换表中记录局面
 	 * @param value 局面得分
 	 * @param depth 搜索了depth层得到的得分
 	 * @param flag 评分值类型
 	 */
-	void recordHash(const uint64_t& key, const int& value, const int& depth, const int& flag);
+	void recordHash(const uint64_t& key, const int& value, const int& depth, const int& flag, const int& bestMove);
 };

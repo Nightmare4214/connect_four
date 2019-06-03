@@ -23,7 +23,6 @@ link_libraries(ws2_32)
 #include"AlphaBetaPruning.hpp"
 int main() {
 	AlphaBetaPruning t;
-	//t.printBoard();
 	//t.pvp();
 	//»Àœ» ÷
 	//t.pve(true);

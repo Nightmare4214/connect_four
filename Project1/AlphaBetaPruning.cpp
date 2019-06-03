@@ -1,23 +1,6 @@
 #include "AlphaBetaPruning.hpp"
 #include"TranspositionTable.hpp"
-
-void AlphaBetaPruning::addMove(const int & move, const int & score)
-{
-	int pos = moveSorterSize;
-	++moveSorterSize;
-	//插入排序
-	while (pos > 0 && moveSorter[pos - 1].score > score) {
-		moveSorter[pos] = moveSorter[pos - 1];
-		--pos;
-	}
-	moveSorter[pos].setData(move, score);
-}
-
-int AlphaBetaPruning::getNextMove()
-{
-	--moveSorterSize;
-	return moveSorter[moveSorterSize].move;
-}
+#include<conio.h>
 
 int AlphaBetaPruning::getScore(const uint64_t & currentMove)const
 {
@@ -272,12 +255,15 @@ int AlphaBetaPruning::evaluate(const int & player, const bool& opponentFlag) con
 
 int AlphaBetaPruning::alphaBetaPruning(int depth, int alpha, int beta, int player, int & move)
 {
+	move = -1;
 	++searchedPosition;
+	bool findedFlag;
 	//获得hash值
-	int hashVal = table.probeHash(getKey(), depth, alpha, beta);
+	int hashVal = table.probeHash(getKey(), depth, alpha, beta, move, findedFlag);
 	int hashFlag = TranspositionTableNode::ALPHA_FLAG;
 	//已经搜过了，可以直接返回
-	if (TranspositionTable::unknown != hashVal) {
+	//TranspositionTable::unknown != hashVal || findedFlag
+	if (findedFlag) {
 		++ttHitCnt;
 		return hashVal;
 	}
@@ -327,20 +313,25 @@ int AlphaBetaPruning::alphaBetaPruning(int depth, int alpha, int beta, int playe
 	if (depth <= 0) {
 		//得分=自己的-对手的
 		int tempVal = evaluate(player) - evaluate(-player);
-		table.recordHash(getKey(), tempVal, depth, TranspositionTableNode::EXACT_FLAG);
+		table.recordHash(getKey(), tempVal, depth, TranspositionTableNode::EXACT_FLAG, -1);
 		return tempVal;
 	}
 
-	moveSorterSize = 0;
+	MoveSorter moveSorter;
 	for (int i = WIDTH - 1; i >= 0; --i) {
 		uint64_t playedMask = nextPosition & columnMask(columnOrder[i]);
 		if (0 == playedMask)continue;
-		addMove(columnOrder[i], getScore(playedMask));
+		moveSorter.addMove(columnOrder[i], getScore(playedMask));
+	}
+
+	//如果有记录最佳着法
+	if (findedFlag&&-1 != move) {
+		moveSorter.changeOrder(move);
 	}
 
 	int tempMove;
-	while (0 != moveSorterSize) {
-		int i = getNextMove();
+	while (!moveSorter.isEmpty()) {
+		int i = moveSorter.getNextMove();
 		//if (0 == (nextPosition & columnMask(i)))continue;
 		play(i, player);
 		++currentDepth;
@@ -350,7 +341,7 @@ int AlphaBetaPruning::alphaBetaPruning(int depth, int alpha, int beta, int playe
 		undo(i);
 		--currentDepth;
 		if (val >= beta) {
-			table.recordHash(getKey(), beta, depth, TranspositionTableNode::BETA_FLAG);
+			table.recordHash(getKey(), beta, depth, TranspositionTableNode::BETA_FLAG, i);
 			return beta;
 		}
 		if (val > alpha) {
@@ -359,7 +350,7 @@ int AlphaBetaPruning::alphaBetaPruning(int depth, int alpha, int beta, int playe
 			alpha = val;
 		}
 	}
-	table.recordHash(getKey(), depth, alpha, hashFlag);
+	table.recordHash(getKey(), depth, alpha, hashFlag, move);
 	return alpha;
 }
 
@@ -381,14 +372,16 @@ int AlphaBetaPruning::getColByAlphaBetaPruning(const int & player)
 	if (0 != size)return opponentWinMove[0];
 
 	//table.reset();
+
 	int col;
 	ttHitCnt = 0;
 	searchedPosition = 0;
 	currentDepth = 0;
 	alphaBetaPruning(maxDepth, -INF, INF, player, col);
-	cout << "hit" << ttHitCnt << endl;
-	cout << "all" << searchedPosition << endl;
-	cout << "命中率" << ttHitCnt * 100.0 / searchedPosition << "%" << endl;
+	_cprintf("hit:%d\r\n", ttHitCnt);
+	_cprintf("all:%d\r\n", searchedPosition);
+	_cprintf("hit rate:%lf%%\r\n", ttHitCnt * 100.0 / searchedPosition);
+
 	return col;
 }
 
@@ -415,10 +408,14 @@ void AlphaBetaPruning::closeSocket()
 
 void AlphaBetaPruning::sendData(const string & msg) const
 {
-	if (send(sockClient, msg.data(), msg.length(), 0) != SOCKET_ERROR)
-		printf("Client:%s\n", msg.data());
-	else
-		printf("发送失败!\n");
+	if (send(sockClient, msg.data(), msg.length(), 0) != SOCKET_ERROR) {
+		//printf("Client:%s\n", msg.data());
+		_cprintf("Client:%s\r\n", msg.data());
+	}
+	else {
+		//printf("发送失败!\n");
+		_cprintf("send error!!!\r\n");
+	}
 }
 
 string AlphaBetaPruning::recvData() const
@@ -426,12 +423,14 @@ string AlphaBetaPruning::recvData() const
 	char message[Len] = { 0 };
 	if (recv(sockClient, message, Len, 0) < 0)
 	{
-		printf("接收失败!\n");
+		//printf("接收失败!\n");
+		_cprintf("receive error!!!\r\n");
 		return GameOver;
 	}
 	else
 	{
-		printf("Server:%s\n", message);
+		//printf("Server:%s\n", message);
+		_cprintf("Server:%s\r\n", message);
 		string msg(message);
 		return msg.substr(0, msg.find_first_of('\r'));
 	}
@@ -629,10 +628,8 @@ void AlphaBetaPruning::AI_course_socket()
 					else {
 						int in = stoi(msg);
 						play(in - 1, player);
-						cout << "对方下了" << in - 1 << endl;
 						player = -player;
 						col = getColByAlphaBetaPruning(player);
-						cout << "AI算出" << col << endl;
 						play(col, player);
 						player = -player;
 						out = col + 1;
@@ -651,4 +648,41 @@ void AlphaBetaPruning::AI_course_socket()
 	{
 		printf(e.what());
 	}
+}
+
+MoveSorter::MoveSorter() :moveSorterSize(0)
+{
+}
+
+void MoveSorter::addMove(const int & move, const int & score)
+{
+	int pos = moveSorterSize;
+	++moveSorterSize;
+	//插入排序
+	while (pos > 0 && container[pos - 1].score > score) {
+		container[pos] = container[pos - 1];
+		--pos;
+	}
+	container[pos].setData(move, score);
+}
+
+int MoveSorter::getNextMove()
+{
+	--moveSorterSize;
+	return container[moveSorterSize].move;
+}
+
+void MoveSorter::changeOrder(const int & move)
+{
+	for (int i = 0; i < AlphaBetaPruning::WIDTH; ++i) {
+		if (container[i].move == move) {
+			swap(container[i], container[moveSorterSize - 1]);
+			break;
+		}
+	}
+}
+
+bool MoveSorter::isEmpty() const
+{
+	return 0 == moveSorterSize;
 }

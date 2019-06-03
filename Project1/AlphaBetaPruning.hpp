@@ -30,10 +30,12 @@ public:
 };
 
 class AlphaBetaPruning {
+public:
 	//高和宽
 	static const int HEIGHT = 6, WIDTH = 8;
 	//最大深度
 	static const int maxDepth = 14;
+private:
 	//目前的深度
 	int currentDepth;
 	//服务端ip
@@ -44,15 +46,6 @@ class AlphaBetaPruning {
 	const string TeamName = "Nightmare_alpha_beta_pruning_v2";
 
 	TranspositionTable table;
-
-	Entry moveSorter[WIDTH];
-	int moveSorterSize;
-
-	//添加下一步
-	void addMove(const int& move, const int& score);
-
-	//获得下一步
-	int getNextMove();
 
 	//获得下下去的分数
 	int getScore(const uint64_t& currentMove)const;
@@ -224,4 +217,22 @@ private:
 	//游戏结束
 	const string GameOver = "game_over";
 
+};
+
+class MoveSorter {
+public:
+	int moveSorterSize;
+	Entry container[AlphaBetaPruning::WIDTH];
+
+	MoveSorter();
+
+	//添加下一步
+	void addMove(const int& move, const int& score);
+
+	//获得下一步
+	int getNextMove();
+
+	void changeOrder(const int& move);
+
+	bool isEmpty()const;
 };
